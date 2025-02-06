@@ -144,7 +144,7 @@ ser = serial.Serial('COM4', 115200, timeout=3)
 
 # Visualize data
 fig = plt.figure()
-ax = plt.axes(xlim=(0, WINDOW_SIZE), ylim=(-1000, 1000))
+ax = plt.axes(xlim=(0, WINDOW_SIZE), ylim=(-100, 100))
 MagX1, = ax.plot([], [])
 MagY1, = ax.plot([], [])
 MagZ1, = ax.plot([], [])
