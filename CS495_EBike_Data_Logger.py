@@ -53,11 +53,13 @@ def save_data():
     mag1 = ([num for num in data_dict["MagX2"]])
     mag2 = ([num for num in data_dict["MagY2"]])
     mag3 = ([num for num in data_dict["MagZ2"]])
-    label = 0
+    label = -1
     if 'E-Bike' == clicked.get():
         label = 1
     elif 'Bike' == clicked.get():
         label = 2
+    elif 'Neither' == clicked.get():
+        label = 0
 
     class_label = ([label for _ in range(WINDOW_SIZE)])
 
@@ -107,7 +109,7 @@ def update(frameNum, magX1, magY1, magZ1, accX1, accY1, accZ1, magX2, magY2, mag
     data = str(line).strip("b'").split(",")
     for data_point in data:
         # Ensure we have clean data to work with
-        if (data_point == '' or data_point.find("Initialization") != -1 or data_point.find("Sensor") != -1):
+        if (data_point == '' or data_point.find("Initialization") != -1 or data_point.find("Sensor") != -1 or data_point.find("Trying") != -1):
             continue
         data_point = data_point.replace(" ", "").split(":")
         try:
@@ -189,7 +191,7 @@ entry = tk.Entry(root)
 entry.pack(pady=20, side="left")
 
 # Dropdown + Label
-options = ["E-Bike", "Bike"]
+options = ["E-Bike", "Bike", "Neither"]
 clicked = StringVar(root)
 clicked.set(options[0])
 dropdown_label = tk.Label(root, text="Classification: ")
