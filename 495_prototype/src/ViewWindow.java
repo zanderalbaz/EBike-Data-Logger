@@ -1,7 +1,7 @@
 //VIEW OF VIEW (HISTORIC DATA) WINDOW
 
 import javax.swing.*;
-import java.awt.event.ActionListener; // important once back button implemeted
+import java.awt.event.ActionListener; // important once back button implemented
 
 public class ViewWindow extends JFrame{
     private JLabel label;
