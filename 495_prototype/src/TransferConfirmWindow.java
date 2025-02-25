@@ -3,7 +3,7 @@
 import javax.swing.*;
 import java.awt.event.ActionListener;
 
-public class TransferConfirmWindow extends JFrame{
+public class TransferConfirmWindow extends JPanel{
     private JLabel confirmTransfer;
     private JLabel label = new JLabel("Transfer Status");
     private JLabel subMessage;
@@ -11,10 +11,8 @@ public class TransferConfirmWindow extends JFrame{
 
     public TransferConfirmWindow(){
         setLayout(null);
-        setSize(800, 500);
         label.setBounds(300, 0, 200, 70);
         add(label);
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
         if(Model.transferSuccess){
             confirmTransfer = new JLabel("TRANSFER SUCCESSFUL");

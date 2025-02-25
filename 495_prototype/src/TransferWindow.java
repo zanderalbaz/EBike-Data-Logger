@@ -3,7 +3,7 @@
 import javax.swing.*;
 import java.awt.event.ActionListener;
 
-public class TransferWindow extends JFrame{
+public class TransferWindow extends JPanel{
     private JLabel label;
     private JButton button_home;
     private JLabel confirmConnection= new JLabel("NOT CONNECTED");
@@ -12,10 +12,7 @@ public class TransferWindow extends JFrame{
     private JLabel location = new JLabel ("Enter Location:");
 
     public TransferWindow(){
-        setTitle("BLM E-bike Data Logger - Collect Data");
         setLayout(null);
-        setSize(800, 500);
-
         label = new JLabel("BLM E-bike Data Transfer");
         label.setBounds(300, 0, 200, 70);
         add(label);
@@ -38,7 +35,6 @@ public class TransferWindow extends JFrame{
         confirmConnection.setBounds(300, 50, 200, 70);
         add(confirmConnection);
 
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);//make sure to automatically close program upon exit
     }
 
     public void transferToHomeButton(ActionListener listener) {
