@@ -6,6 +6,7 @@
 
 #define AD0 1
 
+
 ICM_20948_I2C currentICM;
 enum State {
   SENSOR1_COLLECTION,
@@ -17,6 +18,8 @@ enum State {
 State state = State::STOPPED;
 
 float data[3][6]; //sensor, readings
+float dataOffsets[3][6];
+
 
 void setup()
 {
@@ -31,6 +34,51 @@ void setup()
   pinMode(3, OUTPUT);
   pinMode(4, OUTPUT);
 
+  initializeSensors();
+  delay(500);
+  calibrateSensors(300);
+}
+
+void loop()
+{
+  while(Serial.available()){
+    handleUserInput();
+  }
+  switch (state) {
+    case State::STOPPED:
+      state = State::SENSOR1_COLLECTION;
+      break;
+    case State::SENSOR1_COLLECTION:
+      collectSensorData();
+      switchSensorTo(State::SENSOR2_COLLECTION);
+      break;
+    case State::SENSOR2_COLLECTION:
+      collectSensorData();
+      switchSensorTo(State::SENSOR3_COLLECTION);
+      break;
+    case State::SENSOR3_COLLECTION:
+      collectSensorData();
+      state = State::PRINT;
+      break;
+    case State::PRINT:
+      printSensorData();
+      switchSensorTo(State::SENSOR1_COLLECTION);
+      break;    
+  };
+  delay(7);
+}
+
+void handleUserInput(){
+  String input = Serial.readString();
+  if (input == "c"){
+    calibrateSensors(300);
+  }
+  else if(input == "r"){
+    initializeSensors();
+  }
+}
+
+void initializeSensors(){
   digitalWrite(2, HIGH);
   digitalWrite(3, LOW);
   digitalWrite(4, LOW);
@@ -98,33 +146,6 @@ void setup()
   }
 }
 
-void loop()
-{
-  switch (state) {
-    case State::STOPPED:
-      state = State::SENSOR1_COLLECTION;
-      break;
-    case State::SENSOR1_COLLECTION:
-      collectSensorData();
-      switchSensorTo(State::SENSOR2_COLLECTION);
-      break;
-    case State::SENSOR2_COLLECTION:
-      collectSensorData();
-      switchSensorTo(State::SENSOR3_COLLECTION);
-      break;
-    case State::SENSOR3_COLLECTION:
-      collectSensorData();
-      state = State::PRINT;
-      break;
-    case State::PRINT:
-      printSensorData();
-      switchSensorTo(State::SENSOR1_COLLECTION);
-      break;    
-  };
-  //printState();
-  delay(10);
-}
-
 void printState(){
   switch (state){
     case State::SENSOR1_COLLECTION:
@@ -170,18 +191,13 @@ void switchSensorTo(State newState) {
       break;
   };
   state = newState;
-//  currentICM.begin(WIRE_PORT, AD0);
-//  ICM_20948_Status_e magStatus = currentICM.startupMagnetometer();
-//  if (magStatus != ICM_20948_Stat_Ok) {
-//      SERIAL_PORT.println("Failed to set magnetometer to continuous mode.");
-//      Serial.println(currentICM.statusString());
-//  }//  currentICM.swReset();
 }
 
 void collectSensorData() {
   int attempts = 0;
   while (!currentICM.dataReady()) {
     if (currentICM.statusString() == "Data Underflow") {
+//      Serial.println("Data Underflow");
       attempts++;
       if(attempts >= 5){
         return;
@@ -223,52 +239,108 @@ void collectSensorData() {
 
 void printSensorData() {
   SERIAL_PORT.print("MagX1: ");
-  printFormattedFloat(data[0][0], 5, 2);
+  printFormattedFloat(data[0][0] - dataOffsets[0][0], 5, 2);
   SERIAL_PORT.print(", MagY1: ");
-  printFormattedFloat(data[0][1], 5, 2);
+  printFormattedFloat(data[0][1] - dataOffsets[0][1], 5, 2);
   SERIAL_PORT.print(", MagZ1: ");
-  printFormattedFloat(data[0][2], 5, 2);
+  printFormattedFloat(data[0][2] - dataOffsets[0][2], 5, 2);
+  
   SERIAL_PORT.print(", AccX1: ");
-  printFormattedFloat(data[0][3], 5, 2);
+  printFormattedFloat(data[0][3] - dataOffsets[0][3], 5, 2);
   SERIAL_PORT.print(", AccY1: ");
-  printFormattedFloat(data[0][4], 5, 2);
+  printFormattedFloat(data[0][4] - dataOffsets[0][4], 5, 2);
   SERIAL_PORT.print(", AccZ1: ");
-  printFormattedFloat(data[0][5], 5, 2);
+  printFormattedFloat(data[0][5] - dataOffsets[0][5], 5, 2);
+
+
   
   SERIAL_PORT.print(", MagX2: ");
-  printFormattedFloat(data[1][0], 5, 2);
+  printFormattedFloat(data[1][0] - dataOffsets[1][0], 5, 2);
   SERIAL_PORT.print(", MagY2: ");
-  printFormattedFloat(data[1][1], 5, 2);
+  printFormattedFloat(data[1][1] - dataOffsets[1][1], 5, 2);
   SERIAL_PORT.print(", MagZ2: ");
-  printFormattedFloat(data[1][2], 5, 2);
+  printFormattedFloat(data[1][2] - dataOffsets[1][2], 5, 2);
+  
   SERIAL_PORT.print(", AccX2: ");
-  printFormattedFloat(data[1][3], 5, 2);
+  printFormattedFloat(data[1][3] - dataOffsets[1][3], 5, 2);
   SERIAL_PORT.print(", AccY2: ");
-  printFormattedFloat(data[1][4], 5, 2);
+  printFormattedFloat(data[1][4] - dataOffsets[1][4], 5, 2);
   SERIAL_PORT.print(", AccZ2: ");
-  printFormattedFloat(data[1][5], 5, 2);
+  printFormattedFloat(data[1][5] - dataOffsets[1][5], 5, 2);
+
+
   
   SERIAL_PORT.print(", MagX3: ");
-  printFormattedFloat(data[2][0], 5, 2);
+  printFormattedFloat(data[2][0] - dataOffsets[2][0], 5, 2);
   SERIAL_PORT.print(", MagY3: ");
-  printFormattedFloat(data[2][1], 5, 2);
+  printFormattedFloat(data[2][1] - dataOffsets[2][1], 5, 2);
   SERIAL_PORT.print(", MagZ3: ");
-  printFormattedFloat(data[2][2], 5, 2);
+  printFormattedFloat(data[2][2] - dataOffsets[2][2], 5, 2);
+  
   SERIAL_PORT.print(", AccX3: ");
-  printFormattedFloat(data[2][3], 5, 2);
+  printFormattedFloat(data[2][3] - dataOffsets[2][3], 5, 2);
   SERIAL_PORT.print(", AccY3: ");
-  printFormattedFloat(data[2][4], 5, 2);
+  printFormattedFloat(data[2][4] - dataOffsets[2][4], 5, 2);
   SERIAL_PORT.print(", AccZ3: ");
-  printFormattedFloat(data[2][5], 5, 2);
-
-  //  SERIAL_PORT.print(", AccX" + sensor + ": ");
-  //  printFormattedFloat(currentICM.accX(), 5, 2);
-  //  SERIAL_PORT.print(", AccY" + sensor + ": ");
-  //  printFormattedFloat(currentICM.accY(), 5, 2);
-  //  SERIAL_PORT.print(", AccZ" + sensor + ": ");
-  //  printFormattedFloat(currentICM.accZ(), 5, 2);
-
+  printFormattedFloat(data[2][5] - dataOffsets[2][5], 5, 2);
+  
   Serial.println("");
+}
+
+void calibrateSensors(int iterations){
+  for(int i = 0; i < 3; i++){
+    for(int j = 0; j < 6; j++){
+      dataOffsets[i][j] = 0;
+    }  
+  }
+  for(int i = 0; i < iterations*3; i++){
+   switch (state) {
+      case State::STOPPED:
+        state = State::SENSOR1_COLLECTION;
+        break;
+      case State::SENSOR1_COLLECTION:
+        collectSensorData();
+        dataOffsets[0][0] += data[0][0];
+        dataOffsets[0][1] += data[0][1];
+        dataOffsets[0][2] += data[0][2];
+        dataOffsets[0][3] += data[0][3];
+        dataOffsets[0][4] += data[0][4];
+        dataOffsets[0][5] += data[0][5];
+
+        switchSensorTo(State::SENSOR2_COLLECTION);
+        break;
+      case State::SENSOR2_COLLECTION:
+        collectSensorData();
+        dataOffsets[1][0] += data[1][0];
+        dataOffsets[1][1] += data[1][1];
+        dataOffsets[1][2] += data[1][2];
+        dataOffsets[1][3] += data[1][3];
+        dataOffsets[1][4] += data[1][4];
+        dataOffsets[1][5] += data[1][5];
+        switchSensorTo(State::SENSOR3_COLLECTION);
+        break;
+      case State::SENSOR3_COLLECTION:
+        collectSensorData();
+        dataOffsets[2][0] += data[2][0];
+        dataOffsets[2][1] += data[2][1];
+        dataOffsets[2][2] += data[2][2];
+        dataOffsets[2][3] += data[2][3];
+        dataOffsets[2][4] += data[2][4];
+        dataOffsets[2][5] += data[2][5];
+        switchSensorTo(State::SENSOR1_COLLECTION);
+        break;
+    };  
+  }
+  for(int i = 0; i < 3; i++){
+    for(int j = 0; j < 6; j++){
+      dataOffsets[i][j] = dataOffsets[i][j] / iterations;
+//      Serial.print(dataOffsets[i][j]);
+//      Serial.print(", ");
+    }  
+  }
+//  Serial.println("");
+  switchSensorTo(State::SENSOR1_COLLECTION);
+  Serial.println("Sensors Calibrated");
 }
 
 void printFormattedFloat(float val, uint8_t leading, uint8_t decimals)
