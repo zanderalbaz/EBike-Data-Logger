@@ -1,11 +1,14 @@
 
 #include <ICM_20948.h>
+#include <SPI.h>
+#include <SD.h>
 
 #define SERIAL_PORT Serial
 #define WIRE_PORT Wire
 
 #define AD0 1
 
+unsigned long startCycleMillis, stopCycleMillis;
 
 ICM_20948_I2C currentICM;
 enum State {
@@ -13,7 +16,8 @@ enum State {
   SENSOR2_COLLECTION,
   SENSOR3_COLLECTION,
   STOPPED,
-  PRINT
+  PRINT,
+  SD_WRITE
 };
 State state = State::STOPPED;
 
@@ -37,6 +41,17 @@ void setup()
   initializeSensors();
   delay(500);
   calibrateSensors(300);
+
+   Serial.print("Initializing SD card...");
+
+  // see if the card is present and can be initialized:
+  if (!SD.begin(8)) { //Sparkfun SD Shield chipSelect = 8
+    Serial.println("Card failed, or not present");
+    // don't do anything more:
+    while (1);
+  }
+  Serial.println("card initialized.");
+  
 }
 
 void loop()
@@ -49,6 +64,7 @@ void loop()
       state = State::SENSOR1_COLLECTION;
       break;
     case State::SENSOR1_COLLECTION:
+      startCycleMillis = millis();
       collectSensorData();
       switchSensorTo(State::SENSOR2_COLLECTION);
       break;
@@ -58,14 +74,20 @@ void loop()
       break;
     case State::SENSOR3_COLLECTION:
       collectSensorData();
-      state = State::PRINT;
+      state = State::SD_WRITE;      
+      break;
+    case State::SD_WRITE:
+      //write data to the SD card
+      switchSensorTo(State::SENSOR1_COLLECTION);
+      writeSensorDataToSD();
+      stopCycleMillis = millis();
+      float samplingHz = 1.0/((stopCycleMillis-startCycleMillis)/1000.0);
+      Serial.println(samplingHz);
       break;
     case State::PRINT:
       printSensorData();
-      switchSensorTo(State::SENSOR1_COLLECTION);
       break;    
   };
-  delay(7);
 }
 
 void handleUserInput(){
@@ -191,6 +213,7 @@ void switchSensorTo(State newState) {
       break;
   };
   state = newState;
+  delay(7);
 }
 
 void collectSensorData() {
@@ -285,6 +308,26 @@ void printSensorData() {
   printFormattedFloat(data[2][5] - dataOffsets[2][5], 5, 2);
   
   Serial.println("");
+}
+
+void writeSensorDataToSD(){
+  String dataString = "";
+  for(int i=0; i<3; i++){
+    for(int j=0; j<6; j++){
+      dataString += String(data[i][j] - dataOffsets[i][j]);
+      if(i != 2 && j != 5){
+        dataString += ",";
+      }
+      else{
+        dataString += "\n";
+      }
+    }  
+  }
+  File dataFile = SD.open("datalog.csv", FILE_WRITE);
+  if(dataFile){
+    dataFile.println(dataString);
+    dataFile.close();
+  }
 }
 
 void calibrateSensors(int iterations){
