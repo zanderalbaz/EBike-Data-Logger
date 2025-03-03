@@ -21,15 +21,6 @@ mag2_avg_std = 0
 acc_avg_std = 0
 data_dict = {}
 data_stats = {}
-data_offsets = {"AccX1": 1200,
-                "AccY1": 1000,
-                "AccZ1": 800,
-                "MagX1": 600,
-                "MagY1": 400,
-                "MagZ1": 200,
-                "MagX2": -200,
-                "MagY2": -400,
-                "MagZ2": -600}
 
 
 def on_close():
@@ -44,15 +35,26 @@ def calibrate_sensors():
 
 
 def save_data():
-    col1 = ([num for num in data_dict["MagX1"]])
-    col2 = ([num for num in data_dict["MagY1"]])
-    col3 = ([num for num in data_dict["MagZ1"]])
-    acc1 = ([num for num in data_dict["AccX1"]])
-    acc2 = ([num for num in data_dict["AccY1"]])
-    acc3 = ([num for num in data_dict["AccZ1"]])
-    mag1 = ([num for num in data_dict["MagX2"]])
-    mag2 = ([num for num in data_dict["MagY2"]])
-    mag3 = ([num for num in data_dict["MagZ2"]])
+    magX1 = ([num for num in data_dict["MagX1"]])
+    magY1 = ([num for num in data_dict["MagY1"]])
+    magZ1 = ([num for num in data_dict["MagZ1"]])
+    accX1 = ([num for num in data_dict["AccX1"]])
+    accY1 = ([num for num in data_dict["AccY1"]])
+    accZ1 = ([num for num in data_dict["AccZ1"]])
+    
+    magX2 = ([num for num in data_dict["MagX2"]])
+    magY2 = ([num for num in data_dict["MagY2"]])
+    magZ2 = ([num for num in data_dict["MagZ2"]])
+    accX2 = ([num for num in data_dict["AccX2"]])
+    accY2 = ([num for num in data_dict["AccY2"]])
+    accZ2 = ([num for num in data_dict["AccZ2"]])
+
+    magX3 = ([num for num in data_dict["MagX3"]])
+    magY3 = ([num for num in data_dict["MagY3"]])
+    magZ3 = ([num for num in data_dict["MagZ3"]])
+    accX3 = ([num for num in data_dict["AccX3"]])
+    accY3 = ([num for num in data_dict["AccY3"]])
+    accZ3 = ([num for num in data_dict["AccZ3"]])
     label = -1
     if 'E-Bike' == clicked.get():
         label = 1
@@ -63,9 +65,13 @@ def save_data():
 
     class_label = ([label for _ in range(WINDOW_SIZE)])
 
-    new_data = pd.DataFrame({'MagX1': col1, 'MagY1': col2, 'MagZ1': col3, 'AccX1': acc1,
-                             'AccY1': acc2, 'AccZ1': acc3, 'MagX2': mag1, 'MagY2': mag2,
-                             'MagZ2': mag3, 'Class': class_label})
+    new_data = pd.DataFrame({'MagX1': magX1, 'MagY1': magY1, 'MagZ1': magZ1,
+                             'AccX1': accX1, 'AccY1': accY1, 'AccZ1': accZ1,
+                             'MagX2': magX2, 'MagY2': magY2, 'MagZ2': magZ2,
+                             'AccX2': accX2, 'AccY2': accY2, 'AccZ2': accZ2,
+                             'MagX3': magX3, 'MagY3': magY3, 'MagZ3': magZ3,
+                             'AccX3': accX3, 'AccY3': accY3, 'AccZ3': accZ3,
+                             'Class': class_label})
     # print(new_data)
     header = True
     if os.path.exists(f"{get_name()}.csv"):
@@ -103,7 +109,7 @@ def update_stdev_labels():
 
     root.after(100, update_stdev_labels)
 
-def update(frameNum, magX1, magY1, magZ1, accX1, accY1, accZ1, magX2, magY2, magZ2):
+def update(frameNum, magX1, magY1, magZ1, accX1, accY1, accZ1, magX2, magY2, magZ2, accX2, accY2, accZ2, magX3, magY3, magZ3, accX3, accY3, accZ3):
     global mag1_avg_std, mag2_avg_std, acc_avg_std
     line = ser.readline().strip()
     data = str(line).strip("b'").split(",")
@@ -122,9 +128,21 @@ def update(frameNum, magX1, magY1, magZ1, accX1, accY1, accZ1, magX2, magY2, mag
                 accX1.set_data(range(WINDOW_SIZE), data_dict["AccX1"])
                 accY1.set_data(range(WINDOW_SIZE), data_dict["AccY1"])
                 accZ1.set_data(range(WINDOW_SIZE), data_dict["AccZ1"])
+                
                 magX2.set_data(range(WINDOW_SIZE), data_dict["MagX2"])
                 magY2.set_data(range(WINDOW_SIZE), data_dict["MagY2"])
                 magZ2.set_data(range(WINDOW_SIZE), data_dict["MagZ2"])
+                accX2.set_data(range(WINDOW_SIZE), data_dict["AccX2"])
+                accY2.set_data(range(WINDOW_SIZE), data_dict["AccY2"])
+                accZ2.set_data(range(WINDOW_SIZE), data_dict["AccZ2"])
+
+                magX3.set_data(range(WINDOW_SIZE), data_dict["MagX3"])
+                magY3.set_data(range(WINDOW_SIZE), data_dict["MagY3"])
+                magZ3.set_data(range(WINDOW_SIZE), data_dict["MagZ3"])
+                accX3.set_data(range(WINDOW_SIZE), data_dict["AccX3"])
+                accY3.set_data(range(WINDOW_SIZE), data_dict["AccY3"])
+                accZ3.set_data(range(WINDOW_SIZE), data_dict["AccZ3"])
+
                 acc_avg_std = np.average([np.std(data_dict["AccX1"]), np.std(data_dict["AccY1"]), np.std(data_dict["AccZ1"])])
                 mag1_avg_std = np.average([np.std(data_dict["MagX1"]), np.std(data_dict["MagY1"]), np.std(data_dict["MagZ1"])])
                 mag2_avg_std = np.average([np.std(data_dict["MagX2"]), np.std(data_dict["MagY2"]), np.std(data_dict["MagZ2"])])
@@ -139,6 +157,8 @@ def update(frameNum, magX1, magY1, magZ1, accX1, accY1, accZ1, magX2, magY2, mag
         except KeyError:
             data_dict[data_point[0]] = [0.0] * (WINDOW_SIZE - 1)
             data_dict[data_point[0]].insert(0, float(data_point[1]))
+        except ValueError:
+            print("Parsed incorrectly")
     return magX1,
 
 
@@ -150,17 +170,30 @@ ax = plt.axes(xlim=(0, WINDOW_SIZE), ylim=(-100, 100))
 MagX1, = ax.plot([], [])
 MagY1, = ax.plot([], [])
 MagZ1, = ax.plot([], [])
-MagX2, = ax.plot([], [])
-MagY2, = ax.plot([], [])
-MagZ2, = ax.plot([], [])
 AccX1, = ax.plot([], [])
 AccY1, = ax.plot([], [])
 AccZ1, = ax.plot([], [])
+
+MagX2, = ax.plot([], [])
+MagY2, = ax.plot([], [])
+MagZ2, = ax.plot([], [])
+AccX2, = ax.plot([], [])
+AccY2, = ax.plot([], [])
+AccZ2, = ax.plot([], [])
+
+MagX3, = ax.plot([], [])
+MagY3, = ax.plot([], [])
+MagZ3, = ax.plot([], [])
+AccX3, = ax.plot([], [])
+AccY3, = ax.plot([], [])
+AccZ3, = ax.plot([], [])
+
+
 anim = animation.FuncAnimation(fig, update,
-                               fargs=(MagX1, MagY1, MagZ1, AccX1, AccY1, AccZ1, MagX2, MagY2, MagZ2),
+                               fargs=(MagX1, MagY1, MagZ1, AccX1, AccY1, AccZ1, MagX2, MagY2, MagZ2, AccX2, AccY2, AccZ2, MagX3, MagY3, MagZ3, AccX3, AccY3, AccZ3),
                                frames=200,
                                interval=25)
-ax.legend(['MagX1', 'MagY1', 'MagZ1', 'MagX2', 'MagY2', 'MagZ2', 'AccX1', 'AccY1', 'AccZ1'], ncol=3, loc="upper right")
+# ax.legend(['MagX1', 'MagY1', 'MagZ1', 'MagX2', 'MagY2', 'MagZ2', 'AccX1', 'AccY1', 'AccZ1'], ncol=3, loc="upper right")
 
 # graph & save button
 root = tk.Tk()
