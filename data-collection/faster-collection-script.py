@@ -8,9 +8,10 @@ WINDOW_SIZE = 50
 CALIBRATE = 'c'
 REINITIALIZE = 'r'
 SAVE = 's'
-CLASS = 'E-Bike'
+SLEEP = 's'
+CLASS = 'Neither'
 IDLE = 'i'
-FILENAME = 'rady'
+FILENAME = 'demo'
 
 data_dict = {}
 
@@ -25,6 +26,8 @@ def input_thread():
             save_data()
         elif(user_input == IDLE):
             go_to_idle()
+        elif(user_input == "sleep"):
+            sleep_sensors()
         elif (user_input.split(' ')[0] == 'e'):
             changeClass(user_input.split(' ')[1])
         elif (user_input.split(' ')[0] == 'f'):
@@ -37,6 +40,9 @@ def calibrate_sensors():
     
 def reinitialize_sensors():
     ser.write(REINITIALIZE.encode())
+
+def sleep_sensors():
+    ser.wrilte('s'.encode())
 
 def changeClass(inputClass):
     global CLASS
