@@ -6,7 +6,8 @@ import java.io.InputStreamReader;
 
 public class Main {
     public static void main(String[] args) {
-        SerialIO serialIO = new SerialIO();
+        SerialIO serialIO = new SerialIO(115200, true);
+
         BufferedReader user_reader = new BufferedReader(new InputStreamReader(System.in));
         String line = null;
         while(true){
