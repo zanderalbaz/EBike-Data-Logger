@@ -8,8 +8,9 @@ WINDOW_SIZE = 50
 CALIBRATE = 'c'
 REINITIALIZE = 'r'
 SAVE = 's'
-CLASS = 'Neither'
-FILENAME = 'outside2'
+CLASS = 'E-Bike'
+IDLE = 'i'
+FILENAME = 'rady'
 
 data_dict = {}
 
@@ -22,11 +23,14 @@ def input_thread():
             reinitialize_sensors()
         elif(user_input == SAVE):
             save_data()
+        elif(user_input == IDLE):
+            go_to_idle()
         elif (user_input.split(' ')[0] == 'e'):
             changeClass(user_input.split(' ')[1])
         elif (user_input.split(' ')[0] == 'f'):
             changeFileName(user_input.split(' ')[1])
-
+def go_to_idle():
+    ser.write(IDLE.encode())
 
 def calibrate_sensors():
     ser.write(CALIBRATE.encode())
@@ -98,6 +102,7 @@ def worker_thread():
             if (data_point == '' or data_point.find("Initialization") != -1 or data_point.find("Sensor") != -1 or data_point.find("Trying") != -1):
                 continue
             data_point = data_point.replace(" ", "").split(":")
+            #print(data_point)
             try:
                 if len(data_dict[data_point[0]]) >= WINDOW_SIZE:
                     data_dict[data_point[0]].pop()
@@ -105,13 +110,25 @@ def worker_thread():
                 else:
                     data_dict[data_point[0]].insert(0, float(data_point[1]))
             except KeyError:
-                data_dict[data_point[0]] = [0.0] * (WINDOW_SIZE - 1)
-                data_dict[data_point[0]].insert(0, float(data_point[1]))
+                try:
+                    data_dict[data_point[0]] = [0.0] * (WINDOW_SIZE - 1)
+                    data_dict[data_point[0]].insert(0, float(data_point[1]))
+                except IndexError:
+                    print("incorrect parsing when adding to data dict")
+                except ValueError:
+                    continue
             except ValueError:
                 print("Parsed incorrectly")
-        print(data_dict)
+            except IndexError:
+                continue
+        try:
+            print(data_dict['MagX1'][0])
+        except KeyError:
+            continue
+        except IndexError:
+            continue
     
-ser = serial.Serial('COM4', 115200, timeout=3)
+ser = serial.Serial('COM7', 115200, timeout=3)
 
 
 input_thread = threading.Thread(target=input_thread)
