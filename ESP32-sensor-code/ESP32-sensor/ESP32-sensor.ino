@@ -10,18 +10,21 @@
 
 #define SD_CHIP_SELECT 5  //Sparkfun SD Shield chip select = 8
 
-#define DELETE_FILE true
+#define DELETE_FILE false
 #define FILENAME "/test.csv"
 
 #define WINDOW_SIZE 50
+#define CALIBRATION_ITERATIONS 50
 
 #define COLLECTION_MODE false
 
 #define AD0 1
 
-#define WOM_threshold 255
+#define WOM_threshold 50
 
 unsigned long startCycleMillis, stopCycleMillis;
+unsigned long startSetupMillis, stopSetupMillis;
+
 float samplingHz = 0.0;
 int dataIndex = 0;
 
@@ -38,7 +41,8 @@ enum State {
   SD_READ,
   SLEEP,
   PREPROCESSING,
-  CLASSIFICATION
+  CLASSIFICATION,
+  CALIBRATION
 };
 
 State state = State::STOPPED;
@@ -56,13 +60,18 @@ float dataOffsets[3][6];
 
 void setup()
 {
-
+  startSetupMillis = millis();
   pinMode(SENSOR1_AD0_PIN, OUTPUT);
   pinMode(SENSOR2_AD0_PIN, OUTPUT);
   pinMode(SENSOR3_AD0_PIN, OUTPUT);
 
+  //Stop holding pins (after sleep)
   esp_sleep_enable_ext0_wakeup(WAKEUP_INT_PIN, HIGH);
-  gpio_hold_dis(WAKEUP_INT_PIN);
+  gpio_hold_dis(WAKEUP_INT_PIN);  
+  gpio_hold_dis((gpio_num_t)SENSOR1_AD0_PIN);
+  gpio_hold_dis((gpio_num_t)SENSOR2_AD0_PIN);
+  gpio_hold_dis((gpio_num_t)SENSOR3_AD0_PIN);
+
   gpio_deep_sleep_hold_dis();
 
   Serial.begin(115200);
@@ -74,44 +83,16 @@ void setup()
 
 
   initializeSensors();
-  calibrateSensors(50);
-
-   Serial.print("Initializing SD card...");
-
-  if (!SD.begin(SD_CHIP_SELECT)) {
-    Serial.println("Card failed, or not present");
-    while(true);
-  }
-  Serial.println("card initialized.");
+  initializeSD();
   if(DELETE_FILE){
-    SD.remove(FILENAME);
-    if(!SD.exists(FILENAME)){
-      Serial.println("File was deleted sucessfully");
-    }
+    removeSDFile();
   }
   
-  //This code is from WakeOnMotion example sketch
-  currentICM.cfgIntActiveLow(true);  // Active low to be compatible with the breakout board's pullup resistor
-  currentICM.cfgIntOpenDrain(false); // Push-pull, though open-drain would also work thanks to the pull-up resistors on the breakout
-  currentICM.cfgIntLatch(true);      // Latch the interrupt until cleared
-  Serial.print(F("cfgIntLatch returned: "));
-  Serial.println(currentICM.statusString());
-
-  currentICM.WOMThreshold(WOM_threshold); // set WoM threshold
-  Serial.print(F("Set threshold returned: "));
-  Serial.println(currentICM.statusString());
-
-  currentICM.WOMLogic(true, 1); // enable WoM Logic mode 1
-
-  currentICM.intEnableWOM(true); // enable interrupts on WakeOnMotion
-  Serial.print(F("intEnableWOM returned: "));
-  Serial.println(currentICM.statusString());
-
-  currentICM.WOMThreshold(WOM_threshold); // set WoM threshold - just in case...
-  Serial.print(F("Set threshold returned: "));
-  Serial.println(currentICM.statusString());
-
   State state = State::STOPPED;
+  
+  stopSetupMillis = millis();
+  Serial.print("Setup Time (ms): ");
+  Serial.println(stopSetupMillis - startSetupMillis);
 }
 
 ///////////////////////////////////////
@@ -130,7 +111,7 @@ void loop()
       state = State::SENSOR1_COLLECTION;
       break;
     case State::SENSOR1_COLLECTION:
-      startCycleMillis = millis();
+//      startCycleMillis = millis();
       collectSensorData(dataIndex);
       switchSensorTo(State::SENSOR2_COLLECTION);
       break;
@@ -142,16 +123,24 @@ void loop()
       collectSensorData(dataIndex);
       if(COLLECTION_MODE){
         state = State::PRINT;   
-      }else{
+      }
+      else{
         dataIndex++;
-      stopCycleMillis = millis();
-      samplingHz = 1.0/((stopCycleMillis - startCycleMillis) / 1000.0);
-      Serial.println(samplingHz);        
-      if(dataIndex % WINDOW_SIZE == 0){ //If our data window is full
-          dataIndex = 0;
-          state = State::PREPROCESSING;
+//        stopCycleMillis = millis();
+//        samplingHz = 1.0/((stopCycleMillis - startCycleMillis) / 1000.0);
+//        Serial.println(samplingHz);        
+        if(dataIndex % WINDOW_SIZE == 0){ //If our data window is full
+            dataIndex = 0;
+            state = State::CALIBRATION;
+        }
+        else{
+           state = State::PRINT;   
         }
       }   
+      break;
+    case State::CALIBRATION:
+      calibrateSensors(CALIBRATION_ITERATIONS);
+      state = State::PREPROCESSING;
       break;
     case State::PREPROCESSING:
       preprocessData();
@@ -160,12 +149,18 @@ void loop()
     case State::CLASSIFICATION:
       classifyData();
       state = State::SD_WRITE;
+      break;
     case State::SD_WRITE:
       writeSensorDataToSD();
       state = State::SLEEP;
       break;
     case State::PRINT:
-      printSensorData(0);
+      if(COLLECTION_MODE){
+        printSensorData(0);
+      }
+      else{
+        printSensorData(dataIndex-1);
+      }
       switchSensorTo(State::SENSOR1_COLLECTION);
       break;   
     case State::IDLE:
@@ -178,13 +173,58 @@ void loop()
     case State::SLEEP:
       Serial.println("Entering Deep Sleep");
       switchSensorTo(State::SENSOR2_COLLECTION);
-      //Hold Sensor 2 AD0 pin high during sleep ref
+      //Hold AD0 pins high during sleep ref
       //https://electronics.stackexchange.com/questions/350158/esp32-how-to-keep-a-pin-high-during-deep-sleep-rtc-gpio-pull-ups-are-too-weak
-      gpio_deep_sleep_hold_en();
+
+      //Lock AD0 pins 
+      gpio_hold_en((gpio_num_t)SENSOR1_AD0_PIN);  
       gpio_hold_en((gpio_num_t)SENSOR2_AD0_PIN);  
+      gpio_hold_en((gpio_num_t)SENSOR3_AD0_PIN);  
+      gpio_deep_sleep_hold_en();
+
+       //The code below is from WakeOnMotion example sketch
+      currentICM.cfgIntActiveLow(false);  // Active high to allow interrupt to wakeup the ESP32
+      currentICM.cfgIntOpenDrain(false); // Push-pull, though open-drain would also work thanks to the pull-up resistors on the breakout
+      currentICM.cfgIntLatch(true);      // Latch the interrupt until cleared
+      Serial.print(F("cfgIntLatch returned: "));
+      Serial.println(currentICM.statusString());
+      
+      currentICM.WOMThreshold(WOM_threshold); // set WoM threshold
+      Serial.print(F("Set threshold returned: "));
+      Serial.println(currentICM.statusString());
+      
+      currentICM.WOMLogic(true, 1); // enable WoM Logic mode 1
+      
+      currentICM.intEnableWOM(true); // enable interrupts on WakeOnMotion
+      Serial.print(F("intEnableWOM returned: "));
+      Serial.println(currentICM.statusString());
+      
+      currentICM.WOMThreshold(WOM_threshold); // set WoM threshold - just in case...
+      Serial.print(F("Set threshold returned: "));
+      Serial.println(currentICM.statusString());
+      
+      //END EXAMPLE SKETCH CODE
+      
       esp_deep_sleep_start();
       break;
   };
+}
+
+void initializeSD(){
+  Serial.print("Initializing SD card...");
+
+  if (!SD.begin(SD_CHIP_SELECT)) {
+    Serial.println("Card failed, or not present");
+    while(true);
+  }
+  Serial.println("card initialized.");
+}
+
+void removeSDFile(){
+  SD.remove(FILENAME);
+  if(!SD.exists(FILENAME)){
+    Serial.println("File was deleted sucessfully");
+  }
 }
 
 void preprocessData(){
@@ -198,7 +238,7 @@ void classifyData(){
 void handleUserInput(){
   String input = Serial.readString();
   if (input == "c"){
-    calibrateSensors(100);
+    calibrateSensors(CALIBRATION_ITERATIONS);
   }
   else if(input == "r"){
     initializeSensors();
@@ -212,6 +252,9 @@ void handleUserInput(){
   else if(input == "s"){
     state = State::SLEEP;
   }
+  else if(input == "b"){
+    switchSensorTo(State::SENSOR1_COLLECTION);
+  }
 }
 
 void initializeSensors(){
@@ -223,6 +266,7 @@ void initializeSensors(){
   while (!initialized)
   {
     currentICM.begin(Wire, AD0);
+    
 
     Serial.print(F("Initialization current sensor: "));
     Serial.println(currentICM.statusString());
@@ -231,8 +275,7 @@ void initializeSensors(){
       Serial.println("Trying again...");
       delay(20);
     }
-    else
-    {
+    else{
       initialized = true;
     }
   }
@@ -253,8 +296,7 @@ void initializeSensors(){
       Serial.println("Trying again...");
       delay(20);
     }
-    else
-    {
+    else{
       initialized = true;
     }
   }
@@ -275,8 +317,7 @@ void initializeSensors(){
       Serial.println("Trying again...");
       delay(20);
     }
-    else
-    {
+    else{
       initialized = true;
     }
   }
@@ -428,19 +469,20 @@ void printSensorData(int index) {
 
 void writeSensorDataToSD(){
   String dataString = "";
-  for(int k=0; k<WINDOW_SIZE; k++){
-    for(int i=0; i<3; i++){
-      for(int j=0; j<6; j++){
+  for(int k = 0; k < WINDOW_SIZE; k++){
+    for(int i = 0; i < 3; i++){
+      for(int j = 0; j < 6; j++){
           dataString += String(data[i][j][k] - dataOffsets[i][j]);
           if(i != 2 || j != 5){
             dataString += ",";
           }
-        }
-      }  
-    }
+      }
+    }  
+    dataString += "\n";
+  }
   File dataFile = SD.open(FILENAME, FILE_APPEND);
   if(dataFile){
-    dataFile.println(dataString);
+    dataFile.print(dataString);
     dataFile.close();
   }
   else{
@@ -449,7 +491,7 @@ void writeSensorDataToSD(){
 }
 
 void readDataFromSD(){
-  File dataFile = SD.open(FILENAME);
+  File dataFile = SD.open(FILENAME, FILE_READ);
   if(dataFile){
      while(dataFile.available()){
         Serial.write(dataFile.read()); 
@@ -516,12 +558,13 @@ void calibrateSensors(int iterations){
     for(int j = 0; j < 6; j++){
       dataOffsets[i][j] = dataOffsets[i][j] / iterations;
       Serial.print(dataOffsets[i][j]);
-      Serial.print(", ");
+      if(j != 5 || i != 2){
+        Serial.print(", ");
+      }
     }  
   }
 //  Serial.println("");
-  switchSensorTo(State::SENSOR1_COLLECTION);
-  Serial.println("Sensors Calibrated");
+  Serial.println("\nSensors Calibrated");
 }
 
 //This function is from the ICM_20948 starter code
