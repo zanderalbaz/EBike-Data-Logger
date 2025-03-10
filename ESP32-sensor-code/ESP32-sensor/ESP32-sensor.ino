@@ -33,7 +33,7 @@ float samplingHz = 0.0;
 int dataIndex = 0;
 
 String modDataString = "";
-double modData[72]; //can change all doubles to floats
+float modData[72]; //can change all doubles to floats
 
 ICM_20948_I2C currentICM;
 
@@ -294,24 +294,27 @@ void preprocessData(){
  }
   Serial.println("Data Processed"); //pressing "t" does not do anything
   //Serial.println(modDataString); //NEED TO WRITE TO THE CSV
+  /*
   for(int m = 0; m<72; m++){
       Serial.print(modData[m]);
       Serial.print(", ");
   }
-
+*/
 }
 
 
 
 void classifyData(){
   Serial.println("Classifying Data");
-  /*
-  int result = classifier.predict(data); //make sure you pass the preporcessed data to it
-  Serial.print(" \tPrediction, True: ");
-  Serial.print(result);
-  Serial.print(", ");
-  Serial.println(label);
-  */
+  int result = classifier.predict(modData); //make sure you pass the preporcessed data to it
+  //Serial.print(" \tPrediction, True: ");
+  modDataString += String(result);
+  //Serial.print(result);
+  //Serial.print(", ");
+  //Serial.println(label);
+  Serial.print("Predicted label: ");
+  Serial.println(result);
+  Serial.println(modDataString);
 }
 
 
