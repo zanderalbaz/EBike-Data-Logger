@@ -1,31 +1,19 @@
 #include <ICM_20948.h>
 #include <SPI.h>
 #include <SD.h>
-#include "XGBClassifier.h"
-Eloquent::ML::Port::XGBClassifier classifier;
+#include "SDmanager.h"
+#include "sensorManager.h"
+#include "data.h"
 #include "driver/rtc_io.h" //This is needed for deep sleep wakeup pin configuration
-
 #include <cmath>
 
-#define SENSOR1_AD0_PIN 15
-#define SENSOR2_AD0_PIN 2
-#define SENSOR3_AD0_PIN 4
 #define WAKEUP_INT_PIN GPIO_NUM_13
-
-#define SD_CHIP_SELECT 5  //Sparkfun SD Shield chip select = 8
-
 #define DELETE_FILE false
-#define FILENAME "/test.csv"
-
-#define WINDOW_SIZE 50
 #define CALIBRATION_ITERATIONS 50
-
 #define COLLECTION_MODE false
-
-#define AD0 1
-
 #define WOM_threshold 50
 
+int WINDOW_SIZE = 50;
 unsigned long startCycleMillis, stopCycleMillis;
 unsigned long startSetupMillis, stopSetupMillis;
 
@@ -35,9 +23,7 @@ int dataIndex = 0;
 String modDataString = "";
 float modData[72]; //can change all doubles to floats
 
-ICM_20948_I2C currentICM;
-
-enum State {
+typedef enum State {
   SENSOR1_COLLECTION,
   SENSOR2_COLLECTION,
   SENSOR3_COLLECTION,
@@ -50,11 +36,11 @@ enum State {
   PREPROCESSING,
   CLASSIFICATION,
   CALIBRATION
-};
+}State;
 
 State state = State::STOPPED;
 
-float data[3][6][WINDOW_SIZE]; //sensorNum, feature, instances
+float data[3][6][50]; //WINDOW_SIZE //sensorNum, feature, instances
 float dataOffsets[3][6];
 
 
@@ -132,10 +118,7 @@ void loop()
         state = State::PRINT;   
       }
       else{
-        dataIndex++;
-//        stopCycleMillis = millis();
-//        samplingHz = 1.0/((stopCycleMillis - startCycleMillis) / 1000.0);
-//        Serial.println(samplingHz);        
+        dataIndex++;      
         if(dataIndex % WINDOW_SIZE == 0){ //If our data window is full
             dataIndex = 0;
             state = State::CALIBRATION;
@@ -217,108 +200,6 @@ void loop()
   };
 }
 
-void initializeSD(){
-  Serial.print("Initializing SD card...");
-
-  if (!SD.begin(SD_CHIP_SELECT)) {
-    Serial.println("Card failed, or not present");
-    while(true);
-  }
-  Serial.println("card initialized.");
-}
-
-void removeSDFile(){
-  SD.remove(FILENAME);
-  if(!SD.exists(FILENAME)){
-    Serial.println("File was deleted sucessfully");
-  }
-}
-
-//I THINK THIS WORKS??!?!?
-void preprocessData(){
-  Serial.println("Preprocessing Data");
-  //subtract offsets from data!!!!!!!
-  int modDataIndex = 0;
-
-  for(int i = 0; i < 3; i++){ //sensor ID (123)
-      for(int j = 0; j < 6; j++){ //dimension (Acc XYZ, Mag XYZ)
-        //reset for each sensor/dimension
-        double sum = 0;
-        double maxVal = 0;
-        double minVal = 9999999999999; //what value?
-        for(int k = 0; k < WINDOW_SIZE; k++){
-          sum += (data[i][j][k] - dataOffsets[i][j]);
-          if(maxVal<(data[i][j][k] - dataOffsets[i][j])){
-              maxVal = (data[i][j][k] - dataOffsets[i][j]);
-          }
-          if(minVal>(data[i][j][k] - dataOffsets[i][j])){
-              minVal = (data[i][j][k] - dataOffsets[i][j]);
-          }
-          else{
-            continue;
-          }
-        }
-        double avg = sum/WINDOW_SIZE;
-        
-        //format is: mean, min, max, std
-        
-        modDataString += String(avg);
-        modData[modDataIndex] = avg;
-        modDataIndex++;
-        modDataString += (", ");
-        modDataString += String(minVal);
-        modData[modDataIndex] = minVal;
-        modDataIndex++;
-        modDataString += (", ");
-        modDataString += String(maxVal);
-        modData[modDataIndex] = maxVal;
-        modDataIndex++;
-        modDataString += (", ");
-        
-        
-        //STANDARD DEVIATION
-        double toSum = 0;
-        double summation = 0;
-        for(int l = 0; l < WINDOW_SIZE; l++){
-                double mid = (data[i][j][l] - dataOffsets[i][j])-avg;
-                toSum = mid*mid;
-                summation += toSum;
-        }
-        double toSqrt = summation/WINDOW_SIZE;
-        double stdev = sqrt(toSqrt);
-        modDataString += String(stdev); //int to string??
-        modData[modDataIndex] = stdev;
-        modDataIndex++;
-      }
-      modDataString += (", ");
- }
-  Serial.println("Data Processed"); //pressing "t" does not do anything
-  //Serial.println(modDataString); //NEED TO WRITE TO THE CSV
-  /*
-  for(int m = 0; m<72; m++){
-      Serial.print(modData[m]);
-      Serial.print(", ");
-  }
-*/
-}
-
-
-
-void classifyData(){
-  Serial.println("Classifying Data");
-  int result = classifier.predict(modData); //make sure you pass the preporcessed data to it
-  //Serial.print(" \tPrediction, True: ");
-  modDataString += String(result);
-  //Serial.print(result);
-  //Serial.print(", ");
-  //Serial.println(label);
-  Serial.print("Predicted label: ");
-  Serial.println(result);
-  Serial.println(modDataString);
-}
-
-
-
 
 void handleUserInput(){
   String input = Serial.readString();
@@ -339,72 +220,6 @@ void handleUserInput(){
   }
   else if(input == "b"){
     switchSensorTo(State::SENSOR1_COLLECTION);
-  }
-}
-
-void initializeSensors(){
-  digitalWrite(SENSOR1_AD0_PIN, HIGH);
-  digitalWrite(SENSOR2_AD0_PIN, LOW);
-  digitalWrite(SENSOR3_AD0_PIN, LOW);
-
-  bool initialized = false;
-  while (!initialized)
-  {
-    currentICM.begin(Wire, AD0);
-    
-
-    Serial.print(F("Initialization current sensor: "));
-    Serial.println(currentICM.statusString());
-    if (currentICM.status != ICM_20948_Stat_Ok)
-    {
-      Serial.println("Trying again...");
-      delay(20);
-    }
-    else{
-      initialized = true;
-    }
-  }
-
-  digitalWrite(SENSOR1_AD0_PIN, LOW);
-  digitalWrite(SENSOR2_AD0_PIN, HIGH);
-  digitalWrite(SENSOR3_AD0_PIN, LOW);
-
-  initialized = false;
-  while (!initialized)
-  {
-    currentICM.begin(Wire, AD0);
-
-    Serial.print(F("Initialization current sensor: "));
-    Serial.println(currentICM.statusString());
-    if (currentICM.status != ICM_20948_Stat_Ok)
-    {
-      Serial.println("Trying again...");
-      delay(20);
-    }
-    else{
-      initialized = true;
-    }
-  }
-
-  digitalWrite(SENSOR1_AD0_PIN, LOW);
-  digitalWrite(SENSOR2_AD0_PIN, LOW);
-  digitalWrite(SENSOR3_AD0_PIN, HIGH);
-
-  initialized = false;
-  while (!initialized)
-  {
-    currentICM.begin(Wire, AD0);
-
-    Serial.print(F("Initialization current sensor: "));
-    Serial.println(currentICM.statusString());
-    if (currentICM.status != ICM_20948_Stat_Ok)
-    {
-      Serial.println("Trying again...");
-      delay(20);
-    }
-    else{
-      initialized = true;
-    }
   }
 }
 
@@ -433,6 +248,7 @@ void printState(){
   }
 }
 
+
 void switchSensorTo(State newState) {
   switch (newState) {
     case State::SENSOR1_COLLECTION:
@@ -457,6 +273,8 @@ void switchSensorTo(State newState) {
   state = newState;
   delay(7);
 }
+
+
 
 void collectSensorData(int index) {
   int attempts = 0;
@@ -501,6 +319,8 @@ void collectSensorData(int index) {
       break;
   }
 }
+
+
 
 void printSensorData(int index) {
   Serial.print("MagX1: ");
@@ -552,45 +372,6 @@ void printSensorData(int index) {
   Serial.println("");
 }
 
-void writeSensorDataToSD(){  //will have to re-write this...
-  /*
-  String dataString = "";
-  for(int k = 0; k < WINDOW_SIZE; k++){
-    for(int i = 0; i < 3; i++){
-      for(int j = 0; j < 6; j++){
-          dataString += String(data[i][j][k] - dataOffsets[i][j]);
-          if(i != 2 || j != 5){
-            dataString += ",";
-          }
-      }
-    }  
-    dataString += "\n";
-  }*/
-  File dataFile = SD.open(FILENAME, FILE_APPEND);
-  if(dataFile){
-    dataFile.print(modDataString);
-    dataFile.close();
-  }
-  else{
-    Serial.println("Error opening file to write");  
-  }
-}
-
-
-
-
-void readDataFromSD(){
-  File dataFile = SD.open(FILENAME, FILE_READ);
-  if(dataFile){
-     while(dataFile.available()){
-        Serial.write(dataFile.read()); 
-     }
-     dataFile.close();
-  }
-  else{
-      Serial.println("Error opening file to read");  
-  }
-}
 
 void calibrateSensors(int iterations){
   int calibrationIndex = 0;
@@ -655,6 +436,7 @@ void calibrateSensors(int iterations){
 //  Serial.println("");
   Serial.println("\nSensors Calibrated");
 }
+
 
 //This function is from the ICM_20948 starter code
 void printFormattedFloat(float val, uint8_t leading, uint8_t decimals)
