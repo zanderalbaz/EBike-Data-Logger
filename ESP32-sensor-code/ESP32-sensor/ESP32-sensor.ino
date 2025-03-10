@@ -1,3 +1,12 @@
+#include <ICM_20948.h>
+#include <SPI.h>
+#include <SD.h>
+#include "XGBClassifier.h" //does not recognize
+Eloquent::ML::Port::XGBClassifier classifier; //what does this do?
+#include "driver/rtc_io.h" //This is needed for deep sleep wakeup pin configuration
+
+#include <cmath>
+#include <stdlib.h> //do i need to include this?
 
 #define SENSOR1_AD0_PIN 15
 #define SENSOR2_AD0_PIN 2
@@ -23,6 +32,9 @@ unsigned long startSetupMillis, stopSetupMillis;
 
 float samplingHz = 0.0;
 int dataIndex = 0;
+
+String modDataString = "";
+double modData[72]; //can change all doubles to floats
 
 ICM_20948_I2C currentICM;
 
@@ -147,7 +159,7 @@ void loop()
       state = State::SD_WRITE;
       break;
     case State::SD_WRITE:
-      writeSensorDataToSD();
+      writeSensorDataToSD(); //what the sigma? how am i suppossed to do this....
       state = State::SLEEP;
       break;
     case State::PRINT:
@@ -223,13 +235,84 @@ void removeSDFile(){
   }
 }
 
+//I THINK THIS WORKS??!?!?
 void preprocessData(){
-  Serial.println("Preprocessing Data");  
+  Serial.println("Preprocessing Data");
+  //subtract offsets from data!!!!!!!
+  
+
+  for(int i = 0; i < 3; i++){ //sensor ID (123)
+      for(int j = 0; j < 6; j++){ //dimension (Acc XYZ, Mag XYZ)
+            //reset for each sensor/dimension
+            double sum = 0;
+            double maxVal = 0;
+            double minVal = 300; //what value?
+        for(int k = 0; k < WINDOW_SIZE; k++){
+          sum += (data[i][j][k]);
+          if(maxVal<(data[i][j][k])){
+              maxVal = (data[i][j][k]);
+          }
+          if(minVal>(data[i][j][k])){
+              minVal = (data[i][j][k]);
+          }
+          else{
+            continue;
+          }
+        }
+        double avg = sum/WINDOW_SIZE;
+        
+        //format is: mean, min, max, std
+        
+        modDataString += String(avg);
+        modData[i+j] = avg;
+        modDataString += (", ");
+        modDataString += String(minVal);
+        modData[i+j+1] = minVal;
+        modDataString += (", ");
+        modDataString += String(maxVal);
+        modData[i+j+2] = maxVal;
+        modDataString += (", ");
+        
+        
+        //STANDARD DEVIATION
+        double toSum = 0;
+        double summation = 0;
+        for(int l = 0; l < WINDOW_SIZE; l++){
+                double mid = (data[i][j][l])-avg;
+                toSum = mid*mid;
+                summation += toSum;
+        }
+        double toSqrt = summation/WINDOW_SIZE;
+        double stdev = sqrt(toSqrt);
+        modDataString += String(stdev); //int to string??
+        modData[i+j+3] = stdev;
+      }
+      modDataString += (", ");
+ }
+  Serial.println("Data Processed"); //pressing "t" does not do anything
+  //Serial.println(modDataString); //NEED TO WRITE TO THE CSV
+  for(int m = 0; m<72; m++){
+      Serial.print(modData[m]);
+      Serial.print(", ");
+  }
+
 }
 
+
+
 void classifyData(){
-  Serial.println("Classifying Data");  
+  Serial.println("Classifying Data");
+  /*
+  int result = classifier.predict(data); //make sure you pass the preporcessed data to it
+  Serial.print(" \tPrediction, True: ");
+  Serial.print(result);
+  Serial.print(", ");
+  Serial.println(label);
+  */
 }
+
+
+
 
 void handleUserInput(){
   String input = Serial.readString();
@@ -463,7 +546,8 @@ void printSensorData(int index) {
   Serial.println("");
 }
 
-void writeSensorDataToSD(){
+void writeSensorDataToSD(){  //will have to re-write this...
+  /*
   String dataString = "";
   for(int k = 0; k < WINDOW_SIZE; k++){
     for(int i = 0; i < 3; i++){
@@ -475,16 +559,19 @@ void writeSensorDataToSD(){
       }
     }  
     dataString += "\n";
-  }
+  }*/
   File dataFile = SD.open(FILENAME, FILE_APPEND);
   if(dataFile){
-    dataFile.print(dataString);
+    dataFile.print(modDataString);
     dataFile.close();
   }
   else{
     Serial.println("Error opening file to write");  
   }
 }
+
+
+
 
 void readDataFromSD(){
   File dataFile = SD.open(FILENAME, FILE_READ);
