@@ -1,12 +1,11 @@
 #include <ICM_20948.h>
 #include <SPI.h>
 #include <SD.h>
-#include "XGBClassifier.h" //does not recognize
-Eloquent::ML::Port::XGBClassifier classifier; //what does this do?
+#include "XGBClassifier.h"
+Eloquent::ML::Port::XGBClassifier classifier;
 #include "driver/rtc_io.h" //This is needed for deep sleep wakeup pin configuration
 
 #include <cmath>
-#include <stdlib.h> //do i need to include this?
 
 #define SENSOR1_AD0_PIN 15
 #define SENSOR2_AD0_PIN 2
@@ -96,7 +95,7 @@ void setup()
     removeSDFile();
   }
   
-  State state = State::STOPPED;
+  State state = State::SLEEP;
   
   stopSetupMillis = millis();
   Serial.print("Setup Time (ms): ");
@@ -159,7 +158,7 @@ void loop()
       state = State::SD_WRITE;
       break;
     case State::SD_WRITE:
-      writeSensorDataToSD(); //what the sigma? how am i suppossed to do this....
+      writeSensorDataToSD();
       state = State::SLEEP;
       break;
     case State::PRINT:
@@ -239,21 +238,21 @@ void removeSDFile(){
 void preprocessData(){
   Serial.println("Preprocessing Data");
   //subtract offsets from data!!!!!!!
-  
+  int modDataIndex = 0;
 
   for(int i = 0; i < 3; i++){ //sensor ID (123)
       for(int j = 0; j < 6; j++){ //dimension (Acc XYZ, Mag XYZ)
-            //reset for each sensor/dimension
-            double sum = 0;
-            double maxVal = 0;
-            double minVal = 300; //what value?
+        //reset for each sensor/dimension
+        double sum = 0;
+        double maxVal = 0;
+        double minVal = 9999999999999; //what value?
         for(int k = 0; k < WINDOW_SIZE; k++){
-          sum += (data[i][j][k]);
-          if(maxVal<(data[i][j][k])){
-              maxVal = (data[i][j][k]);
+          sum += (data[i][j][k] - dataOffsets[i][j]);
+          if(maxVal<(data[i][j][k] - dataOffsets[i][j])){
+              maxVal = (data[i][j][k] - dataOffsets[i][j]);
           }
-          if(minVal>(data[i][j][k])){
-              minVal = (data[i][j][k]);
+          if(minVal>(data[i][j][k] - dataOffsets[i][j])){
+              minVal = (data[i][j][k] - dataOffsets[i][j]);
           }
           else{
             continue;
@@ -264,13 +263,16 @@ void preprocessData(){
         //format is: mean, min, max, std
         
         modDataString += String(avg);
-        modData[i+j] = avg;
+        modData[modDataIndex] = avg;
+        modDataIndex++;
         modDataString += (", ");
         modDataString += String(minVal);
-        modData[i+j+1] = minVal;
+        modData[modDataIndex] = minVal;
+        modDataIndex++;
         modDataString += (", ");
         modDataString += String(maxVal);
-        modData[i+j+2] = maxVal;
+        modData[modDataIndex] = maxVal;
+        modDataIndex++;
         modDataString += (", ");
         
         
@@ -278,14 +280,15 @@ void preprocessData(){
         double toSum = 0;
         double summation = 0;
         for(int l = 0; l < WINDOW_SIZE; l++){
-                double mid = (data[i][j][l])-avg;
+                double mid = (data[i][j][l] - dataOffsets[i][j])-avg;
                 toSum = mid*mid;
                 summation += toSum;
         }
         double toSqrt = summation/WINDOW_SIZE;
         double stdev = sqrt(toSqrt);
         modDataString += String(stdev); //int to string??
-        modData[i+j+3] = stdev;
+        modData[modDataIndex] = stdev;
+        modDataIndex++;
       }
       modDataString += (", ");
  }
