@@ -10,14 +10,16 @@ public class Controller {
     private ViewWindow view; //class DNE (yet)
     private TransferConfirmWindow transferConfirmWindow;
     private EBikeDataLogger eBikeDataLogger;
+    private SerialIO serialIO;
 
-    public Controller(Model model, EBikeDataLogger eBikeDataLogger) {
+    public Controller(Model model, EBikeDataLogger eBikeDataLogger, SerialIO serialIO) { //do i need to add all of these here?
         this.eBikeDataLogger = eBikeDataLogger;
         this.model = model;
         this.home = eBikeDataLogger.getHomePanel();
         this.transferWindow = eBikeDataLogger.getTransferWindowPanel();
         this.view = eBikeDataLogger.getViewWindowPanel();
         this.transferConfirmWindow = eBikeDataLogger.getTransferConfirmWindowPanel();
+        this.serialIO = serialIO;
 
 
         this.home.transferButton(new ActionListener() {
@@ -25,6 +27,9 @@ public class Controller {
             public void actionPerformed(ActionEvent e) {
                 eBikeDataLogger.getCardLayout().show(eBikeDataLogger.getCardPanel(), "transferWindow");
                 eBikeDataLogger.setTitle("BLM E-bike Data Logger - Collect Data");
+                serialIO.getSerialWriter().setMessageToWrite("CONNECTED TO SENSOR" + '\n');//must verify that the connection exists via echo
+                //echoing
+
             }
         });
 
@@ -57,13 +62,15 @@ public class Controller {
             @Override
             public void actionPerformed(ActionEvent e) {
                 if(!transferWindow.locationEntry.getText().isEmpty()){ //if NOT empty, allow button press
-                    System.out.println("Pretend data is transferring...");
+                    //System.out.println("Pretend data is transferring...");
+                    serialIO.getSerialWriter().setMessageToWrite("TRANSFERRING DATA" + '\n'); //print to serial "transferring data"
                     if (e.getSource() == transferWindow.transferdatabutton) {
                         String text = transferWindow.locationEntry.getText();
-                        System.out.println("Entered text: " + text); //eventually this needs to add to the CSV file for now, just print it
+                        //System.out.println("Entered text: " + text); //eventually this needs to add to the CSV file for now, just print it
                         //once textbox has been typed in, allow "transfer" button to be clicked
                         eBikeDataLogger.getCardLayout().show(eBikeDataLogger.getCardPanel(), "transferConfirmWindow");
                         eBikeDataLogger.setTitle("BLM E-bike Data Logger - Confirm Transfer");
+                        serialIO.getSerialWriter().setMessageToWrite("TRANSFER SUCCESSFUL" + '\n');//must verify that the connection exists via echo
                     }
                 }
             }

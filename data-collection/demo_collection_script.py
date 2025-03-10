@@ -8,8 +8,8 @@ WINDOW_SIZE = 50
 CALIBRATE = 'c'
 REINITIALIZE = 'r'
 SAVE = 's'
-SLEEP = 's'
 CLASS = 'Neither'
+SLEEP = 's'
 IDLE = 'i'
 FILENAME = 'demo'
 
@@ -27,7 +27,7 @@ def input_thread():
         elif(user_input == IDLE):
             go_to_idle()
         elif(user_input == "sleep"):
-            sleep_sensors()
+            ser.write(SLEEP.encode())
         elif (user_input.split(' ')[0] == 'e'):
             changeClass(user_input.split(' ')[1])
         elif (user_input.split(' ')[0] == 'f'):
@@ -40,9 +40,6 @@ def calibrate_sensors():
     
 def reinitialize_sensors():
     ser.write(REINITIALIZE.encode())
-
-def sleep_sensors():
-    ser.wrilte('s'.encode())
 
 def changeClass(inputClass):
     global CLASS
@@ -134,7 +131,7 @@ def worker_thread():
         except IndexError:
             continue
     
-ser = serial.Serial('COM7', 115200, timeout=3)
+ser = serial.Serial('COM16', 115200, timeout=3)#was 7
 
 
 input_thread = threading.Thread(target=input_thread)
@@ -147,4 +144,3 @@ worker_thread.start()
 
 
 input_thread.join()
-
