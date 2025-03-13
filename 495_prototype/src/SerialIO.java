@@ -1,4 +1,4 @@
-package org.example;
+//package org.example; //what the genuine fuck does this do??
 import com.fazecast.jSerialComm.*;
 import java.io.IOException;
 import java.io.InputStream;
@@ -10,10 +10,16 @@ public class SerialIO  implements AutoCloseable{
     private SerialWriter serialWriter;
 
 
-    public SerialIO(){
+    public SerialIO(int baudRate, boolean verbose){
 
         setComPort();
-        comPort.setBaudRate(115200);
+        if(verbose){
+            for(SerialPort port : SerialPort.getCommPorts()){
+                String portName = port.getSystemPortName();
+                System.out.println(portName);
+            }
+        }
+        comPort.setBaudRate(baudRate);
         comPort.openPort();
         comPort.setComPortTimeouts(SerialPort.TIMEOUT_READ_SEMI_BLOCKING, 0, 0);
         this.serialReader = new SerialReader(comPort);
@@ -38,6 +44,11 @@ public class SerialIO  implements AutoCloseable{
 
     public void setComPort(){
         this.comPort = SerialPort.getCommPorts()[0];
+        System.out.println("Connected to:");
+        System.out.println(SerialPort.getCommPorts()[0].getSystemPortName());
     }
 
+    public SerialPort getComPort() {
+        return this.comPort;
+    }
 }
