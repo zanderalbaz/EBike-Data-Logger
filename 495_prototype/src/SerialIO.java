@@ -11,23 +11,27 @@ public class SerialIO  implements AutoCloseable{
 
 
     public SerialIO(int baudRate, boolean verbose){
+            try {
+                setComPort(); //risky code
+                if (verbose) {
+                    for (SerialPort port : SerialPort.getCommPorts()) {
+                        String portName = port.getSystemPortName();
+                        System.out.println(portName);
+                    }
+                }
+                comPort.setBaudRate(baudRate);
+                comPort.openPort();
+                comPort.setComPortTimeouts(SerialPort.TIMEOUT_READ_SEMI_BLOCKING, 0, 0);
+                this.serialReader = new SerialReader(comPort);
+                this.serialWriter = new SerialWriter(comPort);
 
-        setComPort();
-        if(verbose){
-            for(SerialPort port : SerialPort.getCommPorts()){
-                String portName = port.getSystemPortName();
-                System.out.println(portName);
+                serialReader.start();
+                serialWriter.start();
+            }catch(Exception f){
+                Model.connectionValid = false;
             }
         }
-        comPort.setBaudRate(baudRate);
-        comPort.openPort();
-        comPort.setComPortTimeouts(SerialPort.TIMEOUT_READ_SEMI_BLOCKING, 0, 0);
-        this.serialReader = new SerialReader(comPort);
-        this.serialWriter = new SerialWriter(comPort);
 
-        serialReader.start();
-        serialWriter.start();
-    }
 
     public SerialWriter getSerialWriter() {
         return this.serialWriter;
@@ -42,10 +46,22 @@ public class SerialIO  implements AutoCloseable{
         comPort.closePort();
     }
 
-    public void setComPort(){
+    public void setComPort()throws Exception{
         this.comPort = SerialPort.getCommPorts()[0];
         System.out.println("Connected to:");
         System.out.println(SerialPort.getCommPorts()[0].getSystemPortName());
+
+        if (this.comPort == null){
+            System.out.println("SERIAL IO CRINGED");
+            Model.connectionValid = false;
+            throw new Exception("Cannot establish serial connection");
+        }
+        else{
+            Model.connectionValid = true;
+            System.out.println("SERIAL IO APPROVED");
+            System.out.println(Model.connectionValid);
+        }
+
     }
 
     public SerialPort getComPort() {

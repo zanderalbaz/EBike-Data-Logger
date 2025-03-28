@@ -6,9 +6,9 @@ import java.io.InputStreamReader;
 
 public class Main {
     public static void main(String[] args){
+        SerialIO serialIO = new SerialIO(115200, true); //serial IO
         Model model = new Model();
         EBikeDataLogger eBikeDataLogger = new EBikeDataLogger();
-        SerialIO serialIO = new SerialIO(115200, true); //serial IO
         Controller controller = new Controller(model, eBikeDataLogger, serialIO);
 
         //BEGIN SERIAL
@@ -21,7 +21,7 @@ public class Main {
                 e.printStackTrace();
             }
             if(line != null){
-                serialIO.getSerialWriter().setMessageToWrite(line + '\n');
+                //serialIO.getSerialWriter().setMessageToWrite(line + '\n'); //writes whatever the arduino tells it to
             }
 
         }

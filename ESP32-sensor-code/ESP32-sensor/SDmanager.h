@@ -36,6 +36,7 @@ void writeSensorDataToSD(){  //will have to re-write this...
 void readDataFromSD(){
   File dataFile = SD.open(FILENAME, FILE_READ);
   if(dataFile){
+    Serial.println("DUMPING FROM SD:");
      while(dataFile.available()){
         Serial.write(dataFile.read()); 
      }

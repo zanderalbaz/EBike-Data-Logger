@@ -36,15 +36,15 @@ void preprocessData(){
         modDataString += String(avg);
         modData[modDataIndex] = avg;
         modDataIndex++;
-        modDataString += (", ");
+        modDataString += (",");
         modDataString += String(minVal);
         modData[modDataIndex] = minVal;
         modDataIndex++;
-        modDataString += (", ");
+        modDataString += (",");
         modDataString += String(maxVal);
         modData[modDataIndex] = maxVal;
         modDataIndex++;
-        modDataString += (", ");
+        modDataString += (",");
         
         
         //STANDARD DEVIATION
@@ -59,9 +59,10 @@ void preprocessData(){
         double stdev = sqrt(toSqrt);
         modDataString += String(stdev); //int to string??
         modData[modDataIndex] = stdev;
+        modDataString += (",");
         modDataIndex++;
       }
-      modDataString += (", ");
+      //modDataString += (", ");
  }
   Serial.println("Data Processed"); //pressing "t" does not do anything
   //Serial.println(modDataString); //NEED TO WRITE TO THE CSV

@@ -2,11 +2,12 @@
 
 import javax.swing.*;
 import java.awt.event.ActionListener;
+import java.lang.constant.ModuleDesc;
 
 public class TransferWindow extends JPanel{
     private JLabel label;
     private JButton button_home;
-    private JLabel confirmConnection= new JLabel("NOT CONNECTED");
+    private JLabel confirmConnection;
     public JTextField locationEntry = new JTextField(20); // *************************PUBLIC
     public JButton transferdatabutton = new JButton("Confirm Data Transfer"); //*********PUBLIC
     private JLabel location = new JLabel ("Enter Location:");
@@ -25,25 +26,36 @@ public class TransferWindow extends JPanel{
         //what does adding a panel do?
         locationEntry.setBounds(350, 130, 150, 20);
         transferdatabutton.setBounds(300, 200, 200, 20);
+        showConnectionStatus();
+    }
 
+    public void showConnectionStatus(){
         if (Model.connectionValid) {
+            System.out.print("Connection valid (view window): ");
+            System.out.println(Model.connectionValid);
             confirmConnection = new JLabel("CONNECTION CONFIRMED");
             add(location);
             add(locationEntry);
             add(transferdatabutton);
+            confirmConnection.setBounds(300, 50, 200, 70);
+            add(confirmConnection);
         }
-        confirmConnection.setBounds(300, 50, 200, 70);
-        add(confirmConnection);
+        else{
+            System.out.print("Connection invalid (view window): ");
+            confirmConnection = new JLabel("CONNECTION FAILED");
+            confirmConnection.setBounds(300, 200, 200, 70);
+            add(confirmConnection);
 
+        }
     }
 
     public void transferToHomeButton(ActionListener listener) {
         button_home.addActionListener(listener);
     } //back button
 
-
+    //TRANSFER DATA BUTTON
     public void transferdatabutton(ActionListener listener) {
         transferdatabutton.addActionListener(listener);
-    } //button to transfer data
+    }
 
 }
