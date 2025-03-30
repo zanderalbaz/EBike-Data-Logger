@@ -2,6 +2,7 @@
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 
@@ -73,13 +74,14 @@ public class Controller {
             @Override
             public void actionPerformed(ActionEvent e) {
                 if(!transferWindow.locationEntry.getText().isEmpty()){ //if NOT empty, allow button press
-                    serialIO.getSerialWriter().setMessageToWrite("t"); //send 't' to serial -> hopefully will print SD data to java terminal
-                    //need to test with sensor array
+                    serialIO.getSerialWriter().setMessageToWrite("t"); //successfully sending to ESP32-> confirmed w/echo program
                     if (e.getSource() == transferWindow.transferdatabutton){
                         String text = transferWindow.locationEntry.getText(); //get text from text box entry
                         filename = text + ".csv"; //get time from RTC and add to file name
+                        String location = "..\\495_prototype\\TestFolder"; //nice
+                        File outputFile = new File(location, filename);
                         System.out.println(filename);
-                        try(FileWriter writer = new FileWriter(filename)){
+                        try(FileWriter writer = new FileWriter(outputFile)){
                             //append Serial output (after t press) to CSV file
                             writer.append(writeHeader());
                             System.out.println("File created successfully!");
@@ -89,7 +91,6 @@ public class Controller {
 
                         eBikeDataLogger.getCardLayout().show(eBikeDataLogger.getCardPanel(), "transferConfirmWindow");
                         eBikeDataLogger.setTitle("BLM E-bike Data Logger - Confirm Transfer");
-                        serialIO.getSerialWriter().setMessageToWrite("TRANSFER SUCCESSFUL" + '\n');//must verify that the connection exists via echo
                     }
                 }
             }

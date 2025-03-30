@@ -52,13 +52,11 @@ public class SerialIO  implements AutoCloseable{
         System.out.println(SerialPort.getCommPorts()[0].getSystemPortName());
 
         if (this.comPort == null){
-            System.out.println("SERIAL IO CRINGED");
             Model.connectionValid = false;
             throw new Exception("Cannot establish serial connection");
         }
         else{
             Model.connectionValid = true;
-            System.out.println("SERIAL IO APPROVED");
             System.out.println(Model.connectionValid);
         }
 

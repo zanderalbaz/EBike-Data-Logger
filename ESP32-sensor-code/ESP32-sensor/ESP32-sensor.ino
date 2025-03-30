@@ -222,6 +222,9 @@ void handleUserInput(){
   else if(input == "b"){
     switchSensorTo(State::SENSOR1_COLLECTION);
   }
+  else {
+    Serial.println("Unsupported Operation: " + input);  
+  }
 }
 
 void printState(){

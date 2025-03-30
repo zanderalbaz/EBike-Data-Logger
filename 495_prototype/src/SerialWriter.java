@@ -23,6 +23,7 @@ public class SerialWriter extends Thread {
         byte[] data_to_send;
         while(true) {
             if (getMessageToWrite() != null) {
+                //System.out.println("serialWriter is active");
                 data_to_send = getMessageToWrite().getBytes(StandardCharsets.UTF_8);
                 comPort.writeBytes(data_to_send, data_to_send.length);
                 setMessageToWrite(null);
