@@ -10,9 +10,12 @@ import java.io.InputStream;
 //Modified for our use case
 public class SerialReader extends Thread{
     private SerialPort comPort = null;
+    public static String serialBuffer;
+    public static boolean didIAsk = false; //should be private with getter
     public SerialReader(SerialPort comPort){
         this.comPort = comPort;
     }
+
     @Override
     public void run(){
         InputStream in = comPort.getInputStream();
@@ -20,7 +23,13 @@ public class SerialReader extends Thread{
         {
             while (true) {
                 while(comPort.bytesAvailable() > 0) {
-                    System.out.print((char) in.read());
+                    //System.out.print((char) in.read());
+                    if(didIAsk){
+                        System.out.print((char) in.read());
+                        //serialBuffer += (char) in.read();
+                        //System.out.println(serialBuffer);
+                    }
+
                 }
             }
 

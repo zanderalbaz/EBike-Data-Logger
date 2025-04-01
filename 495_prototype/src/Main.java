@@ -11,6 +11,7 @@ public class Main {
         EBikeDataLogger eBikeDataLogger = new EBikeDataLogger();
         Controller controller = new Controller(model, eBikeDataLogger, serialIO);
 
+
         //BEGIN SERIAL
         BufferedReader user_reader = new BufferedReader(new InputStreamReader(System.in));
         String line = null;
@@ -22,6 +23,7 @@ public class Main {
             }
             if(line != null){
                 //serialIO.getSerialWriter().setMessageToWrite(line + '\n'); //writes whatever the arduino tells it to
+                //huh???????
             }
 
         }

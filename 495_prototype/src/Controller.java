@@ -1,5 +1,8 @@
 //CONTROLLER
 
+import javax.swing.*;
+import javax.swing.filechooser.FileNameExtensionFilter;
+import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
@@ -60,6 +63,18 @@ public class Controller {
             }
         });
 
+        this.view.openSelectedFile(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                //String toDelete = view.myList.getSelectedValue();
+               File fileToOpen = new File("..\\495_prototype\\TestFolder\\"+view.fileListDisplay.getSelectedValue()); //HOLY SHIT IT WORKSS
+                if(fileToOpen != null){
+                    System.out.println("OPENING FILE...");
+                    openFile(fileToOpen);
+                }
+
+            }
+        });
 
         this.view.viewToHomeButton(new ActionListener() {
             @Override
@@ -76,15 +91,18 @@ public class Controller {
                 if(!transferWindow.locationEntry.getText().isEmpty()){ //if NOT empty, allow button press
                     serialIO.getSerialWriter().setMessageToWrite("t"); //successfully sending to ESP32-> confirmed w/echo program
                     if (e.getSource() == transferWindow.transferdatabutton){
+                        SerialReader.didIAsk = true;
+                        //System.out.println(SerialReader.didIAsk);
                         String text = transferWindow.locationEntry.getText(); //get text from text box entry
                         filename = text + ".csv"; //get time from RTC and add to file name
                         String location = "..\\495_prototype\\TestFolder"; //nice
                         File outputFile = new File(location, filename);
                         System.out.println(filename);
                         try(FileWriter writer = new FileWriter(outputFile)){
-                            //append Serial output (after t press) to CSV file
                             writer.append(writeHeader());
                             System.out.println("File created successfully!");
+                            //writer.append(SerialReader.serialBuffer);
+                            //System.out.println(SerialReader.serialBuffer);
                         }catch(IOException q){
                             System.out.println("ERROR writing to csv");
                         }
@@ -104,6 +122,14 @@ public class Controller {
             }
         });
 
+    }
+    public static void openFile(File file) {
+            System.out.println("Opening: "+file);
+            try {
+                Desktop.getDesktop().open(file);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
     }
     public String writeHeader(){
         String headerList = "";
