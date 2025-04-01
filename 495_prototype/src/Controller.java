@@ -66,12 +66,17 @@ public class Controller {
         this.view.openSelectedFile(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                //String toDelete = view.myList.getSelectedValue();
-               File fileToOpen = new File("..\\495_prototype\\TestFolder\\"+view.fileListDisplay.getSelectedValue()); //HOLY SHIT IT WORKSS
-                if(fileToOpen != null){
-                    System.out.println("OPENING FILE...");
-                    openFile(fileToOpen);
+                try{
+                    File fileToOpen = new File("..\\495_prototype\\TestFolder\\"+view.fileListDisplay.getSelectedValue()); //HOLY SHIT IT WORKSS
+                    if(fileToOpen != null){
+                        System.out.println("OPENING FILE...");
+                        openFile(fileToOpen);
+                    }
+                }catch(Exception g){
+                    System.out.println("No file selected");
                 }
+
+
 
             }
         });
@@ -121,7 +126,6 @@ public class Controller {
                 eBikeDataLogger.setTitle("BLM E-bike Data Logger - View Data");
             }
         });
-
     }
     public static void openFile(File file) {
             System.out.println("Opening: "+file);
