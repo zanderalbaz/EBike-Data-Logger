@@ -17,6 +17,7 @@ public class TransferConfirmWindow extends JPanel{
         if(Model.transferSuccess){
             confirmTransfer = new JLabel("TRANSFER SUCCESSFUL");
             subMessage = new JLabel("Your data is secure, you may unplug from the sensor");
+            //will need to check if hashes match here
         }
         else{
             confirmTransfer = new JLabel("TRANSFER FAILED");

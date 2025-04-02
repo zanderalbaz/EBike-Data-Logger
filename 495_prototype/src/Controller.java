@@ -17,6 +17,7 @@ public class Controller {
     private TransferConfirmWindow transferConfirmWindow;
     private EBikeDataLogger eBikeDataLogger;
     private SerialIO serialIO;
+    private HashGenerator hash;
 
     private String filename;
 
@@ -28,6 +29,7 @@ public class Controller {
         this.view = eBikeDataLogger.getViewWindowPanel();
         this.transferConfirmWindow = eBikeDataLogger.getTransferConfirmWindowPanel();
         this.serialIO = serialIO;
+        this.hash = hash;
 
 
         this.home.transferButton(new ActionListener() {
@@ -103,6 +105,13 @@ public class Controller {
                         String location = "..\\495_prototype\\TestFolder"; //nice
                         File outputFile = new File(location, filename);
                         System.out.println(filename);
+
+                        try {
+                            hash.createMD5Hash("hello world");
+                        } catch (Exception ex) {
+                            throw new RuntimeException(ex);
+                        }
+
                         try(FileWriter writer = new FileWriter(outputFile)){
                             writer.append(writeHeader());
                             System.out.println("File created successfully!");
