@@ -11,7 +11,7 @@
 #define DELETE_FILE false
 #define CALIBRATION_ITERATIONS 50
 #define COLLECTION_MODE false
-#define WOM_threshold 50
+#define WOM_threshold 50 //Wake On Motion (milli-g)
 
 int WINDOW_SIZE = 50;
 unsigned long startCycleMillis, stopCycleMillis;
@@ -252,19 +252,16 @@ void printState(){
 void switchSensorTo(State newState) {
   switch (newState) {
     case State::SENSOR1_COLLECTION:
-//            Serial.println("Switched to sensor1");
       digitalWrite(SENSOR1_AD0_PIN, HIGH);
       digitalWrite(SENSOR2_AD0_PIN, LOW);
       digitalWrite(SENSOR3_AD0_PIN, LOW);
       break;
     case State::SENSOR2_COLLECTION:
-//            Serial.println("Switched to sensor2");
       digitalWrite(SENSOR1_AD0_PIN, LOW);
       digitalWrite(SENSOR2_AD0_PIN, HIGH);
       digitalWrite(SENSOR3_AD0_PIN, LOW);
       break;
     case State::SENSOR3_COLLECTION:
-//            Serial.println("Switched to sensor3");
       digitalWrite(SENSOR1_AD0_PIN, LOW);
       digitalWrite(SENSOR2_AD0_PIN, LOW);
       digitalWrite(SENSOR3_AD0_PIN, HIGH);
@@ -415,14 +412,6 @@ void calibrateSensors(int iterations){
         switchSensorTo(State::SENSOR1_COLLECTION);
         break;
     };  
-//    for(int i = 0; i < 3; i++){
-//      for(int j = 0; j < 6; j++){
-//        Serial.print(data[i][j]);
-//        Serial.print(", ");
-//      }  
-//    }
-//    Serial.println("");
-//    delay(1);
   }
   for(int i = 0; i < 3; i++){
     for(int j = 0; j < 6; j++){
