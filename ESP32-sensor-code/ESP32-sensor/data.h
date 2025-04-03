@@ -1,6 +1,6 @@
 #include "XGBClassifier.h"
-extern int WINDOW_SIZE;
-extern float data[3][6][50]; //WINDOW_SIZE
+extern float data[3][6][WINDOW_SIZE]; //WINDOW_SIZE
+extern float dataOffsets[3][6];
 extern String modDataString;
 extern float modData[72];
 
@@ -10,7 +10,6 @@ void preprocessData(){
   Serial.println("Preprocessing Data");
   //subtract offsets from data!!!!!!!
   int modDataIndex = 0;
-
   for(int i = 0; i < 3; i++){ //sensor ID (123)
       for(int j = 0; j < 6; j++){ //dimension (Acc XYZ, Mag XYZ)
         //reset for each sensor/dimension
@@ -36,15 +35,15 @@ void preprocessData(){
         modDataString += String(avg);
         modData[modDataIndex] = avg;
         modDataIndex++;
-        modDataString += (",");
+        modDataString += (", ");
         modDataString += String(minVal);
         modData[modDataIndex] = minVal;
         modDataIndex++;
-        modDataString += (",");
+        modDataString += (", ");
         modDataString += String(maxVal);
         modData[modDataIndex] = maxVal;
         modDataIndex++;
-        modDataString += (",");
+        modDataString += (", ");
         
         
         //STANDARD DEVIATION
@@ -58,11 +57,11 @@ void preprocessData(){
         double toSqrt = summation/WINDOW_SIZE;
         double stdev = sqrt(toSqrt);
         modDataString += String(stdev); //int to string??
+        modDataString += (", ");
         modData[modDataIndex] = stdev;
-        modDataString += (",");
         modDataIndex++;
       }
-      //modDataString += (", ");
+//      modDataString += (", ");
  }
   Serial.println("Data Processed"); //pressing "t" does not do anything
   //Serial.println(modDataString); //NEED TO WRITE TO THE CSV
@@ -73,6 +72,7 @@ void classifyData(){
   int result = classifier.predict(modData); //make sure you pass the preporcessed data to it
   //Serial.print(" \tPrediction, True: ");
   modDataString += String(result);
+  modDataString += '\n';
   //Serial.print(result);
   //Serial.print(", ");
   //Serial.println(label);

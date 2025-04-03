@@ -2,6 +2,7 @@
 #define FILENAME "/test.csv"
 
 extern String modDataString;
+extern float dataOffsets[3][6];
 
 void initializeSD(){
   Serial.print("Initializing SD card...");
@@ -21,7 +22,7 @@ void removeSDFile(){
   }
 }
 
-void writeSensorDataToSD(){  //will have to re-write this...
+void writeSensorDataToSD(){
   File dataFile = SD.open(FILENAME, FILE_APPEND);
   if(dataFile){
     dataFile.print(modDataString);
@@ -32,11 +33,38 @@ void writeSensorDataToSD(){  //will have to re-write this...
   }
 }
 
+void writeRawSensorDataToSD(float rawdata[3][6][WINDOW_SIZE], int classification){
+  String rawDataString = "";
+  for (int k =1; k < WINDOW_SIZE; k++){
+    rawDataString += String(k); //Write data index
+    rawDataString += ", ";
+    for (int i =0; i < 3; i++){
+      for (int j =0; j < 6; j++){
+
+          rawDataString += String(rawdata[i][j][k] - dataOffsets[i][j]);
+          rawDataString += ", ";
+      }
+    }
+    rawDataString += String(classification);
+    rawDataString += "\n";
+  }
+  Serial.print(rawDataString);
+  
+  File dataFile = SD.open(FILENAME, FILE_APPEND);
+  if(dataFile){
+    dataFile.print(rawDataString);
+    dataFile.close();
+  }
+  else{
+    Serial.println("Error opening file to write");  
+  }
+}
+
+
 
 void readDataFromSD(){
   File dataFile = SD.open(FILENAME, FILE_READ);
   if(dataFile){
-    Serial.println("DUMPING FROM SD:");
      while(dataFile.available()){
         Serial.write(dataFile.read()); 
      }
