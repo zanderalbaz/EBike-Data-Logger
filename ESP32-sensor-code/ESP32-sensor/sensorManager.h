@@ -4,8 +4,6 @@
 
 #define AD0 1
 
-//extern enum State;
-//extern state State;
 extern float dataOffsets[3][6];
 
 ICM_20948_I2C currentICM;
