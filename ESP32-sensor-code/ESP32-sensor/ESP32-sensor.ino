@@ -1,7 +1,7 @@
 #define WAKEUP_INT_PIN GPIO_NUM_13
 #define CALIBRATION_ITERATIONS 100
 #define COLLECTION_MODE true
-#define WOM_threshold 50 //Wake On Motion (milli-g)
+#define WOM_threshold 15 //Wake On Motion (milli-g)
 
 #define WINDOW_SIZE 51
 
