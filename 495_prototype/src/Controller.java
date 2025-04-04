@@ -28,7 +28,7 @@ public class Controller {
         this.view = eBikeDataLogger.getViewWindowPanel();
         this.transferConfirmWindow = eBikeDataLogger.getTransferConfirmWindowPanel();
         this.serialIO = serialIO;
-        this.hash = hash;
+        this.hash = new HashGenerator();
 
 
         this.home.transferButton(new ActionListener() {
@@ -106,25 +106,24 @@ public class Controller {
                         File outputFile = new File(location, filename);
                         System.out.println(filename);
 
-                        /*
-                        try {
-                            hash.createMD5Hash("hello world");
-                        } catch (Exception ex) {
-                            throw new RuntimeException(ex);
-                        }
-                         */
                         try(FileWriter writer = new FileWriter(outputFile)){
                             writer.write(writeHeader()); //append
                             System.out.println("File created successfully!");
-                            //SerialReader.serialBuffer = "";
                             SerialReader.sleep(10000); //needs to be longer?? Add a loading screen??//until no more bytes to be read
-                            //System.out.println(SerialReader.serialBuffer);
                             writer.write(writeHeader()+SerialReader.serialBuffer); //why are we missing the 1st data point?
                             view.showContents();
 
                         }catch(IOException q){
                             System.out.println("ERROR writing to csv");
                         } catch (InterruptedException ex) {
+                            throw new RuntimeException(ex);
+                        }
+
+                        //CREATE HASH
+                        try {
+                            String myHash = hash.createMD5Hash(SerialReader.serialBuffer); //5eb63bbbe01eeed093cb22bb8f5acdc3 -> hello world
+                            System.out.println(myHash);
+                        } catch (Exception ex) {
                             throw new RuntimeException(ex);
                         }
 
