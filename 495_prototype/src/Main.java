@@ -12,7 +12,7 @@ public class Main {
 
         //????????????????????????
         HashGenerator hash = new HashGenerator();
-        Controller controller = new Controller(model, eBikeDataLogger, serialIO, hash);
+        Controller controller = new Controller(model, eBikeDataLogger, serialIO);
 
 
         //BEGIN SERIAL

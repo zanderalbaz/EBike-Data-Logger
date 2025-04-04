@@ -15,7 +15,6 @@ public class SerialReader extends Thread{
     public SerialReader(SerialPort comPort){
         this.comPort = comPort;
     }
-    public static String inputHash = "";
 
     @Override
     public void run(){
@@ -25,7 +24,7 @@ public class SerialReader extends Thread{
             if(didIAsk){
                 while (true) {
                     while (comPort.bytesAvailable() > 0) {
-                        //System.out.print((char) in.read()); //THISSSS WRITES TO TERMINAL THE INPUT FROM ARDUINO
+                        System.out.print((char) in.read()); //THISSSS WRITES TO TERMINAL THE INPUT FROM ARDUINO
                         serialBuffer += ((char) in.read());
                     }
 

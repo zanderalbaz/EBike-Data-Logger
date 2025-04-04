@@ -5,7 +5,9 @@ import java.awt.event.ActionListener;
 public class Model {
     private String message;
     public static boolean connectionValid; //should probably not be static?     //should probably be private w/ getters/setters
-    public static boolean transferSuccess;
+    public static boolean transferSuccess = true;
+    //set to true if the data is found in the view tab
+        //how to check?
 
     public String getMessage() {
         return message;
