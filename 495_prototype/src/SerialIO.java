@@ -1,4 +1,3 @@
-//package org.example; //what the genuine fuck does this do??
 import com.fazecast.jSerialComm.*;
 import java.io.IOException;
 import java.io.InputStream;
