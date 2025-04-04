@@ -12,7 +12,7 @@ public class SerialIO  implements AutoCloseable{
 
     public SerialIO(int baudRate, boolean verbose){
             try {
-                setComPort(); //risky code
+                setComPort(); //risky code+
                 if (verbose) {
                     for (SerialPort port : SerialPort.getCommPorts()) {
                         String portName = port.getSystemPortName();
