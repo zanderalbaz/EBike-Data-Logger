@@ -5,6 +5,7 @@
 
 #define WINDOW_SIZE 51
 
+#include <MD5.h>
 #include <ICM_20948.h>
 #include <SPI.h>
 #include <SD.h>
@@ -14,7 +15,7 @@
 #include "driver/rtc_io.h" //This is needed for deep sleep wakeup pin configuration
 #include <cmath>
 
-
+char *md5str;
 unsigned long startCycleMillis, stopCycleMillis;
 unsigned long startSetupMillis, stopSetupMillis;
 
@@ -264,6 +265,15 @@ void handleUserInput(){
     removeSDFile();
     state = State::SLEEP;
   }
+  else if(input =="h"){
+    sendHash();
+    state = State::SLEEP;
+  }
+}
+
+void sendHash(){
+  Serial.println(md5str);
+  free(md5str);
 }
 
 void printState(){

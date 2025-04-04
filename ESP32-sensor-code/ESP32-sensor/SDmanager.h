@@ -3,6 +3,7 @@
 
 extern String modDataString;
 extern float dataOffsets[3][6];
+extern char *md5str;
 
 void initializeSD(){
   Serial.print("Initializing SD card...");
@@ -64,10 +65,21 @@ void writeRawSensorDataToSD(float rawdata[3][6][WINDOW_SIZE], int classification
 
 void readDataFromSD(){
   File dataFile = SD.open(FILENAME, FILE_READ);
+  String fileTransferString = "";
   if(dataFile){
      while(dataFile.available()){
-        Serial.write(dataFile.read()); 
+      fileTransferString.concat(dataFile.read());
+//        Serial.write(dataFile.read()); 
      }
+     //generate the MD5 hash for our string
+     int transferLen = fileTransferString.length() + 1;
+     char charArrayFile[transferLen];
+     fileTransferString.toCharArray(charArrayFile,transferLen);
+     unsigned char* hash=MD5::make_hash(charArrayFile);
+     //generate the digest (hex encoding) of our hash
+     md5str = MD5::make_digest(hash, 16);
+     free(hash);      
+     Serial.print(fileTransferString);
      dataFile.close();
   }
   else{
