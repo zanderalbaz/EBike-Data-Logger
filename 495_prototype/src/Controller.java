@@ -7,6 +7,7 @@ import java.awt.event.ActionListener;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.Objects;
 
 public class Controller {
     private Model model; // don't need this??
@@ -20,7 +21,7 @@ public class Controller {
 
     private String filename;
 
-    public Controller(Model model, EBikeDataLogger eBikeDataLogger, SerialIO serialIO) { //do i need to add all of these here?
+    public Controller(Model model, EBikeDataLogger eBikeDataLogger, SerialIO serialIO, HashGenerator hash) { //do i need to add all of these here?
         this.eBikeDataLogger = eBikeDataLogger;
         this.model = model;
         this.home = eBikeDataLogger.getHomePanel();
@@ -28,7 +29,7 @@ public class Controller {
         this.view = eBikeDataLogger.getViewWindowPanel();
         this.transferConfirmWindow = eBikeDataLogger.getTransferConfirmWindowPanel();
         this.serialIO = serialIO;
-        this.hash = new HashGenerator();
+        //this.hash = new HashGenerator();
 
 
         this.home.transferButton(new ActionListener() {
@@ -119,12 +120,30 @@ public class Controller {
                             throw new RuntimeException(ex);
                         }
 
+                        String myHash;
                         //CREATE HASH
                         try {
-                            String myHash = hash.createMD5Hash(SerialReader.serialBuffer); //5eb63bbbe01eeed093cb22bb8f5acdc3 -> hello world
+                            myHash = hash.createMD5Hash(SerialReader.serialBuffer); //5eb63bbbe01eeed093cb22bb8f5acdc3 -> hello world
                             System.out.println(myHash);
                         } catch (Exception ex) {
                             throw new RuntimeException(ex);
+                        }
+
+                        //POTENTIALLY PROBLEMATIC CODE:
+                        SerialReader.serialBuffer = "";
+                        serialIO.getSerialWriter().setMessageToWrite("h"); //will get hash data from arduino
+                        SerialReader.inputHash = SerialReader.serialBuffer;
+
+
+                        //COMPARE HASHES
+                        if(Objects.equals(myHash, SerialReader.inputHash)){
+                            System.out.println("Hashes matched -> data transfer success!");
+                            Model.transferSuccess = true;
+                        }else{
+                            System.out.println("hashes do not match -> that is not good");
+                            System.out.println("myHash: "+ myHash);
+                            System.out.println("inputHash: "+ SerialReader.inputHash);
+                            Model.transferSuccess = false; //model or Model???
                         }
 
                         eBikeDataLogger.getCardLayout().show(eBikeDataLogger.getCardPanel(), "transferConfirmWindow");

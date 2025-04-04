@@ -1,6 +1,7 @@
 #include "XGBClassifier.h"
-extern int WINDOW_SIZE;
-extern float data[3][6][50]; //WINDOW_SIZE
+//extern int WINDOW_SIZE;
+extern float data[3][6][WINDOW_SIZE]; //WINDOW_SIZE
+extern float dataOffsets[3][6];
 extern String modDataString;
 extern float modData[72];
 

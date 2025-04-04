@@ -1,4 +1,11 @@
+#define WAKEUP_INT_PIN GPIO_NUM_13
+#define CALIBRATION_ITERATIONS 100
+#define COLLECTION_MODE true
+#define WOM_threshold 15 //Wake On Motion (milli-g)
 
+#define WINDOW_SIZE 51
+
+#include <MD5.h>
 #include <ICM_20948.h>
 #include <SPI.h>
 #include <SD.h>
@@ -8,18 +15,23 @@
 #include "driver/rtc_io.h" //This is needed for deep sleep wakeup pin configuration
 #include <cmath>
 
-#define WAKEUP_INT_PIN GPIO_NUM_13
-#define DELETE_FILE false
-#define CALIBRATION_ITERATIONS 50
-#define COLLECTION_MODE false
-#define WOM_threshold 50
-
-int WINDOW_SIZE = 50;
+char *md5str;
 unsigned long startCycleMillis, stopCycleMillis;
 unsigned long startSetupMillis, stopSetupMillis;
 
-float samplingHz = 0.0;
+unsigned long collectionCycleStartMillis;
+unsigned long calibrationCycleStartMillis;
+
+RTC_DATA_ATTR unsigned short collectionModeClassification;
+
+float sampleHz= 16.6667;
+
+
+
 int dataIndex = 0;
+
+bool DELETE_FILE  = false;
+
 
 String modDataString = "";
 float modData[72]; //can change all doubles to floats
@@ -41,8 +53,10 @@ typedef enum State {
 
 State state = State::STOPPED;
 
-float data[3][6][50]; //WINDOW_SIZE //sensorNum, feature, instances
-float dataOffsets[3][6];
+float data[3][6][WINDOW_SIZE]; //WINDOW_SIZE //sensorNum, feature, instances
+RTC_DATA_ATTR float dataOffsets[3][6];
+
+RTC_DATA_ATTR short num_wakeups = 0;
 
 
 
@@ -78,15 +92,20 @@ void setup()
 
   initializeSensors();
   initializeSD();
-  if(DELETE_FILE){
-    removeSDFile();
+
+  if(num_wakeups == 0) {
+    if(DELETE_FILE){
+      removeSDFile();
+    }
+    calibrateSensors(CALIBRATION_ITERATIONS);
+    state = State::SLEEP;
+    collectionModeClassification=0;
   }
-  
-  State state = State::SLEEP;
   
   stopSetupMillis = millis();
   Serial.print("Setup Time (ms): ");
   Serial.println(stopSetupMillis - startSetupMillis);
+  num_wakeups++;
 }
 
 ///////////////////////////////////////
@@ -102,10 +121,12 @@ void loop()
   }
   switch (state) {
     case State::STOPPED:
+      Serial.println("Starting Data Collection");
+      startCycleMillis = millis();
       state = State::SENSOR1_COLLECTION;
       break;
     case State::SENSOR1_COLLECTION:
-//      startCycleMillis = millis();
+      collectionCycleStartMillis = millis();
       collectSensorData(dataIndex);
       switchSensorTo(State::SENSOR2_COLLECTION);
       break;
@@ -115,23 +136,29 @@ void loop()
       break;
     case State::SENSOR3_COLLECTION:
       collectSensorData(dataIndex);
-      if(COLLECTION_MODE){
-        state = State::PRINT;   
+      while(millis() - collectionCycleStartMillis < 1000/sampleHz);
+      dataIndex++;      
+      if(dataIndex% WINDOW_SIZE == 0){ //If our data window is full
+          dataIndex = 0;
+          if(COLLECTION_MODE){
+            state = State::SD_WRITE;
+          }
+          else {
+            state = State::PREPROCESSING;
+          }
+          stopCycleMillis = millis();
+          Serial.print("Collected Data Over ");
+          Serial.print((stopCycleMillis - startCycleMillis)/1000.0);
+          Serial.println("s");
+          break;
       }
-      else{
-        dataIndex++;      
-        if(dataIndex % WINDOW_SIZE == 0){ //If our data window is full
-            dataIndex = 0;
-            state = State::CALIBRATION;
-        }
-        else{
-           state = State::PRINT;   
-        }
-      }   
+      else {
+          switchSensorTo(State::SENSOR1_COLLECTION);
+      }
       break;
     case State::CALIBRATION:
       calibrateSensors(CALIBRATION_ITERATIONS);
-      state = State::PREPROCESSING;
+      state = State::SLEEP;
       break;
     case State::PREPROCESSING:
       preprocessData();
@@ -142,16 +169,16 @@ void loop()
       state = State::SD_WRITE;
       break;
     case State::SD_WRITE:
-      writeSensorDataToSD();
+      if(COLLECTION_MODE){
+        writeRawSensorDataToSD(data, collectionModeClassification);
+      }
+      else{
+        writeSensorDataToSD();
+      }
       state = State::SLEEP;
       break;
     case State::PRINT:
-      if(COLLECTION_MODE){
-        printSensorData(0);
-      }
-      else{
-        printSensorData(dataIndex-1);
-      }
+      printSensorData(dataIndex-1);
       switchSensorTo(State::SENSOR1_COLLECTION);
       break;   
     case State::IDLE:
@@ -220,11 +247,33 @@ void handleUserInput(){
     state = State::SLEEP;
   }
   else if(input == "b"){
-    switchSensorTo(State::SENSOR1_COLLECTION);
+    Serial.println("Label set to: Bike");
+    collectionModeClassification = 2; //bike
+    state = State::SLEEP;
   }
-  else {
-    Serial.println("Unsupported Operation: " + input);  
+  else if(input == "e"){
+    Serial.println("Label set to: E-Bike");
+    collectionModeClassification = 1; //e-bike
+    state = State::SLEEP;
   }
+  else if(input == "n"){
+    Serial.println("Label set to: Neither");
+    collectionModeClassification = 0; //neither
+    state = State::SLEEP;
+  }
+  else if(input == "d"){
+    removeSDFile();
+    state = State::SLEEP;
+  }
+  else if(input =="h"){
+    sendHash();
+    state = State::SLEEP;
+  }
+}
+
+void sendHash(){
+  Serial.println(md5str);
+  free(md5str);
 }
 
 void printState(){
@@ -256,19 +305,16 @@ void printState(){
 void switchSensorTo(State newState) {
   switch (newState) {
     case State::SENSOR1_COLLECTION:
-//            Serial.println("Switched to sensor1");
       digitalWrite(SENSOR1_AD0_PIN, HIGH);
       digitalWrite(SENSOR2_AD0_PIN, LOW);
       digitalWrite(SENSOR3_AD0_PIN, LOW);
       break;
     case State::SENSOR2_COLLECTION:
-//            Serial.println("Switched to sensor2");
       digitalWrite(SENSOR1_AD0_PIN, LOW);
       digitalWrite(SENSOR2_AD0_PIN, HIGH);
       digitalWrite(SENSOR3_AD0_PIN, LOW);
       break;
     case State::SENSOR3_COLLECTION:
-//            Serial.println("Switched to sensor3");
       digitalWrite(SENSOR1_AD0_PIN, LOW);
       digitalWrite(SENSOR2_AD0_PIN, LOW);
       digitalWrite(SENSOR3_AD0_PIN, HIGH);
@@ -388,6 +434,7 @@ void calibrateSensors(int iterations){
   for(int i = 0; i < iterations*3; i++){
    switch (state) {
       case State::SENSOR1_COLLECTION:
+        calibrationCycleStartMillis= millis();
         collectSensorData(calibrationIndex);
         dataOffsets[0][0] += data[0][0][0];
         dataOffsets[0][1] += data[0][1][0];
@@ -416,17 +463,10 @@ void calibrateSensors(int iterations){
         dataOffsets[2][3] += data[2][3][0];
         dataOffsets[2][4] += data[2][4][0];
         dataOffsets[2][5] += data[2][5][0];
+        while(millis() -   calibrationCycleStartMillis < 1000/sampleHz);
         switchSensorTo(State::SENSOR1_COLLECTION);
         break;
     };  
-//    for(int i = 0; i < 3; i++){
-//      for(int j = 0; j < 6; j++){
-//        Serial.print(data[i][j]);
-//        Serial.print(", ");
-//      }  
-//    }
-//    Serial.println("");
-//    delay(1);
   }
   for(int i = 0; i < 3; i++){
     for(int j = 0; j < 6; j++){

@@ -19,7 +19,7 @@ public class ViewWindow extends JPanel{
 
         button_home.setBounds(10, 10, 50, 20);
         add(button_home);
-        //showContents();
+        showContents(); //where should this be called so that it shows when no connection AND updates after a new CSV is added
 
         openButton.setBounds(300,400,70,30);
         add(openButton);
@@ -36,9 +36,12 @@ public class ViewWindow extends JPanel{
                 fileList.addElement(file.getName());
             }
             fileListDisplay = new JList<>(fileList);
-            fileListDisplay.setBounds(250,100,200,300); //should prob fix the layout but this is necessary for now
+            fileListDisplay.setBounds(250,70,200,300); //should prob fix the layout but this is necessary for now
             add(fileListDisplay); //bc static
         }
     }
     public void openSelectedFile(ActionListener listener){openButton.addActionListener(listener);}
 }
+
+
+//feature hash to java

@@ -15,6 +15,7 @@ public class SerialReader extends Thread{
     public SerialReader(SerialPort comPort){
         this.comPort = comPort;
     }
+    public static String inputHash = "";
 
     @Override
     public void run(){

@@ -9,7 +9,10 @@ public class Main {
         SerialIO serialIO = new SerialIO(115200, true); //serial IO
         Model model = new Model();
         EBikeDataLogger eBikeDataLogger = new EBikeDataLogger();
-        Controller controller = new Controller(model, eBikeDataLogger, serialIO);
+
+        //????????????????????????
+        HashGenerator hash = new HashGenerator();
+        Controller controller = new Controller(model, eBikeDataLogger, serialIO, hash);
 
 
         //BEGIN SERIAL
