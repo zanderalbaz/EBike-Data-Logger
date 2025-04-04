@@ -1,6 +1,6 @@
 #define WAKEUP_INT_PIN GPIO_NUM_13
 #define CALIBRATION_ITERATIONS 100
-#define COLLECTION_MODE true
+#define COLLECTION_MODE false
 #define WOM_threshold 15 //Wake On Motion (milli-g)
 
 #define WINDOW_SIZE 51
@@ -241,6 +241,7 @@ void handleUserInput(){
     state = State::IDLE;
   }
   else if(input == "t"){
+    Serial.println("Transferring data");
     state = State::SD_READ;  
   }
   else if(input == "s"){
