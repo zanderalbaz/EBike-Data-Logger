@@ -255,6 +255,7 @@ void handleUserInput(){
     state = State::IDLE;
   }
   else if(input == "t"){
+    Serial.println("Transferring data");
     state = State::SD_READ;  
   }
   else if(input == "s"){

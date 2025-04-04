@@ -9,7 +9,10 @@ public class Main {
         SerialIO serialIO = new SerialIO(115200, true); //serial IO
         Model model = new Model();
         EBikeDataLogger eBikeDataLogger = new EBikeDataLogger();
-        Controller controller = new Controller(model, eBikeDataLogger, serialIO);
+
+        //????????????????????????
+        HashGenerator hash = new HashGenerator();
+        Controller controller = new Controller(model, eBikeDataLogger, serialIO, hash);
 
 
         //BEGIN SERIAL
@@ -22,11 +25,11 @@ public class Main {
                 e.printStackTrace();
             }
             if(line != null){
-                //serialIO.getSerialWriter().setMessageToWrite(line + '\n'); //writes whatever the arduino tells it to
-                //huh???????
+                serialIO.getSerialWriter().setMessageToWrite(line + '\n');
             }
 
         }
 
     }
 }
+//start program -> wait until blinking stops -> smack -> while blinking press confirm transfer

@@ -71,19 +71,19 @@ void readDataFromSD(){
   String fileTransferString = "";
   if(dataFile){
      while(dataFile.available()){
-      fileTransferString.concat(dataFile.read());
-//        Serial.write(dataFile.read()); 
+//      fileTransferString.concat(dataFile.read());
+        Serial.write(dataFile.read()); 
      }
      //generate the MD5 hash for our string
-     int transferLen = fileTransferString.length() + 1;
-     char charArrayFile[transferLen];
-     fileTransferString.toCharArray(charArrayFile,transferLen);
-     unsigned char* hash=MD5::make_hash(charArrayFile);
+//     int transferLen = fileTransferString.length() + 1;
+//     char charArrayFile[transferLen];
+//     fileTransferString.toCharArray(charArrayFile,transferLen);
+     unsigned char* hash=MD5::make_hash("hello world");
      //generate the digest (hex encoding) of our hash
      md5str = MD5::make_digest(hash, 16);
      
      free(hash);      
-     Serial.print(fileTransferString);
+//    Serial.print(fileTransferString);
      dataFile.close();
   }
   else{
