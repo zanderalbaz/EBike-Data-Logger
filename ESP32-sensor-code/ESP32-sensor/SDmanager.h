@@ -4,6 +4,7 @@
 extern String modDataString;
 extern float dataOffsets[3][6];
 extern char *md5str;
+extern unsigned long epochSeconds;
 
 void initializeSD(){
   Serial.print("Initializing SD card...");
@@ -26,6 +27,8 @@ void removeSDFile(){
 void writeSensorDataToSD(){
   File dataFile = SD.open(FILENAME, FILE_APPEND);
   if(dataFile){
+    dataFile.print(epochSeconds);
+    dataFile.print(", ");
     dataFile.print(modDataString);
     dataFile.close();
   }
@@ -78,6 +81,7 @@ void readDataFromSD(){
      unsigned char* hash=MD5::make_hash(charArrayFile);
      //generate the digest (hex encoding) of our hash
      md5str = MD5::make_digest(hash, 16);
+     
      free(hash);      
      Serial.print(fileTransferString);
      dataFile.close();

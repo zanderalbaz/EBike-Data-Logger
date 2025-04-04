@@ -1,10 +1,14 @@
 #define WAKEUP_INT_PIN GPIO_NUM_13
 #define CALIBRATION_ITERATIONS 100
-#define COLLECTION_MODE true
+#define COLLECTION_MODE false
 #define WOM_threshold 15 //Wake On Motion (milli-g)
 
 #define WINDOW_SIZE 51
 
+unsigned long epochSeconds = 0;
+char *md5str;
+
+#include <ESP32Time.h>
 #include <MD5.h>
 #include <ICM_20948.h>
 #include <SPI.h>
@@ -15,7 +19,8 @@
 #include "driver/rtc_io.h" //This is needed for deep sleep wakeup pin configuration
 #include <cmath>
 
-char *md5str;
+ESP32Time rtc(-21600);  // offset in seconds GMT+1
+
 unsigned long startCycleMillis, stopCycleMillis;
 unsigned long startSetupMillis, stopSetupMillis;
 
@@ -68,6 +73,7 @@ RTC_DATA_ATTR short num_wakeups = 0;
 
 void setup()
 {
+  
   startSetupMillis = millis();
   pinMode(SENSOR1_AD0_PIN, OUTPUT);
   pinMode(SENSOR2_AD0_PIN, OUTPUT);
@@ -106,6 +112,12 @@ void setup()
   Serial.print("Setup Time (ms): ");
   Serial.println(stopSetupMillis - startSetupMillis);
   num_wakeups++;
+  //change this code to be on Java application startup
+  
+//  Serial.println("Please input current time in epoch seconds");
+//  epochSeconds = Serial.parseInt();
+//  Serial.println(epochSeconds);
+//  rtc.setTime(epochSeconds);
 }
 
 ///////////////////////////////////////
@@ -173,6 +185,8 @@ void loop()
         writeRawSensorDataToSD(data, collectionModeClassification);
       }
       else{
+        struct tm timeinfo = rtc.getTimeStruct();
+        rtc.getEpoch();
         writeSensorDataToSD();
       }
       state = State::SLEEP;
