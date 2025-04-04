@@ -22,11 +22,11 @@ public class Main {
                 e.printStackTrace();
             }
             if(line != null){
-                //serialIO.getSerialWriter().setMessageToWrite(line + '\n'); //writes whatever the arduino tells it to
-                //huh???????
+                serialIO.getSerialWriter().setMessageToWrite(line + '\n');
             }
 
         }
 
     }
 }
+//start program -> wait until blinking stops -> smack -> while blinking press confirm transfer

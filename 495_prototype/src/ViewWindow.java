@@ -19,7 +19,7 @@ public class ViewWindow extends JPanel{
 
         button_home.setBounds(10, 10, 50, 20);
         add(button_home);
-        showContents();
+        //showContents();
 
         openButton.setBounds(300,400,70,30);
         add(openButton);

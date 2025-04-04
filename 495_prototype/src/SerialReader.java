@@ -11,7 +11,7 @@ import java.io.InputStream;
 public class SerialReader extends Thread{
     private SerialPort comPort = null;
     public static String serialBuffer;
-    public static boolean didIAsk = false; //should be private with getter
+    public static boolean didIAsk = true; //should be private with getter
     public SerialReader(SerialPort comPort){
         this.comPort = comPort;
     }
@@ -21,18 +21,15 @@ public class SerialReader extends Thread{
         InputStream in = comPort.getInputStream();
         try
         {
-            while (true) {
-                while(comPort.bytesAvailable() > 0) {
-                    //System.out.print((char) in.read());
-                    if(didIAsk){
-                        System.out.print((char) in.read());
-                        //serialBuffer += (char) in.read();
-                        //System.out.println(serialBuffer);
+            if(didIAsk){
+                while (true) {
+                    while (comPort.bytesAvailable() > 0) {
+                        //System.out.print((char) in.read()); //THISSSS WRITES TO TERMINAL THE INPUT FROM ARDUINO
+                        serialBuffer += ((char) in.read());
                     }
 
                 }
             }
-
         } catch (Exception e) {
             e.printStackTrace();
         }
