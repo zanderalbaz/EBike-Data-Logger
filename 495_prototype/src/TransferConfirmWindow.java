@@ -10,6 +10,11 @@ public class TransferConfirmWindow extends JPanel{
     private JButton viewData = new JButton("View Data");
 
     public TransferConfirmWindow(){
+        try {
+            UIManager.setLookAndFeel("javax.swing.plaf.nimbus.NimbusLookAndFeel"); //com.sun.java.swing.plaf.windows.WindowsLookAndFeel
+        } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | UnsupportedLookAndFeelException e) {
+            e.printStackTrace();
+        }
         setLayout(null);
         label.setBounds(300, 0, 200, 70);
         add(label);

@@ -7,6 +7,8 @@ import java.awt.event.ActionListener;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.time.LocalDate;
+import java.time.LocalTime;
 
 public class Controller {
     private Model model; // don't need this??
@@ -29,6 +31,8 @@ public class Controller {
         this.transferConfirmWindow = eBikeDataLogger.getTransferConfirmWindowPanel();
         this.serialIO = serialIO;
         this.hash = new HashGenerator();
+        LocalTime datetime = LocalTime.now();
+        LocalDate date = LocalDate.now();
 
 
         this.home.transferButton(new ActionListener() {
@@ -101,17 +105,18 @@ public class Controller {
                     if (e.getSource() == transferWindow.transferdatabutton){
                         SerialReader.didIAsk = true;
                         String text = transferWindow.locationEntry.getText(); //get text from text box entry
-                        filename = text + ".csv"; //get time from RTC and add to file name
+                        filename = text +"_"+ date +".csv"; //get time from RTC and add to file name
+                        System.out.println("Time: "+ datetime);
                         String location = "..\\495_prototype\\TestFolder"; //nice
                         File outputFile = new File(location, filename);
                         System.out.println(filename);
 
                         try(FileWriter writer = new FileWriter(outputFile)){
-                            writer.write(writeHeader()); //append
-                            System.out.println("File created successfully!");
+                            //writer.write(writeHeader()); //append
                             SerialReader.sleep(10000); //needs to be longer?? Add a loading screen??//until no more bytes to be read
                             writer.write(writeHeader()+SerialReader.serialBuffer); //why are we missing the 1st data point?
                             view.showContents();
+                            System.out.println("File created successfully!");
 
                         }catch(IOException q){
                             System.out.println("ERROR writing to csv");
@@ -151,7 +156,7 @@ public class Controller {
             }
     }
     public String writeHeader(){
-        String headerList = "";
+        String headerList = "Timestamp,";
         String sensorType;
         String sensorNum;
         String dimension;
@@ -188,6 +193,7 @@ public class Controller {
                         stat = "std";
                     }
                     headerList += (sensorType+dimension+sensorNum+":"+stat+", ");
+                    //System.out.println("lick my nuts: "+i+" "+j+" "+k);
                 }
             }
         }

@@ -13,6 +13,11 @@ public class TransferWindow extends JPanel{
     private JLabel location = new JLabel ("Enter Location:");
 
     public TransferWindow(){
+        try {
+            UIManager.setLookAndFeel("javax.swing.plaf.nimbus.NimbusLookAndFeel"); //com.sun.java.swing.plaf.windows.WindowsLookAndFeel
+        } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | UnsupportedLookAndFeelException e) {
+            e.printStackTrace();
+        }
         setLayout(null);
         label = new JLabel("BLM E-bike Data Transfer");
         label.setBounds(300, 0, 200, 70);
@@ -24,7 +29,7 @@ public class TransferWindow extends JPanel{
 
         location.setBounds(250, 100, 200, 70);
         //what does adding a panel do?
-        locationEntry.setBounds(350, 130, 150, 20);
+        locationEntry.setBounds(350, 130, 150, 30);
         transferdatabutton.setBounds(300, 200, 200, 20);
         showConnectionStatus();
     }

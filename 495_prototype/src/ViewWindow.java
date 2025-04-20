@@ -12,6 +12,11 @@ public class ViewWindow extends JPanel{
     private JButton openButton = new JButton("Open");
     public JList<String> fileListDisplay;
     public ViewWindow() {
+        try {
+            UIManager.setLookAndFeel("javax.swing.plaf.nimbus.NimbusLookAndFeel"); //com.sun.java.swing.plaf.windows.WindowsLookAndFeel
+        } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | UnsupportedLookAndFeelException e) {
+            e.printStackTrace();
+        }
         setLayout(null); //no layout manager -> everything is manual
         label = new JLabel("BLM E-bike Data Viewer");
         label.setBounds(300, 0, 200, 70);
