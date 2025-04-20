@@ -20,6 +20,10 @@ public class Controller {
     private SerialIO serialIO;
     private HashGenerator hash;
 
+    private static File appDir;
+    public static File getAppDir() {
+        return appDir;
+    }
     private String filename;
 
     public Controller(Model model, EBikeDataLogger eBikeDataLogger, SerialIO serialIO) { //do i need to add all of these here?
@@ -33,6 +37,20 @@ public class Controller {
         this.hash = new HashGenerator();
         LocalTime datetime = LocalTime.now();
         LocalDate date = LocalDate.now();
+
+        String userHome = System.getProperty("user.home");
+        String appFolderName = ".EBikeData";
+        appDir = new File(userHome, appFolderName);
+
+        if (!appDir.exists()) {
+            boolean created = appDir.mkdirs();
+            if (created) {
+                System.out.println("Created app folder at: " + appDir.getAbsolutePath());
+            } else {
+                System.err.println("Failed to create app folder.");
+                return;
+            }
+        }
 
 
         this.home.transferButton(new ActionListener() {
@@ -72,7 +90,8 @@ public class Controller {
             @Override
             public void actionPerformed(ActionEvent e) {
                 try{
-                    File fileToOpen = new File("..\\495_prototype\\TestFolder\\"+view.fileListDisplay.getSelectedValue()); //HOLY SHIT IT WORKSS
+                    //File fileToOpen = new File("..\\495_prototype\\TestFolder\\"+view.fileListDisplay.getSelectedValue()); //HOLY SHIT IT WORKSS
+                    File fileToOpen = new File(appDir+view.fileListDisplay.getSelectedValue());
                     if(fileToOpen != null){
                         System.out.println("OPENING FILE...");
                         openFile(fileToOpen);
@@ -101,20 +120,19 @@ public class Controller {
             public void actionPerformed(ActionEvent e) {
                 if(!transferWindow.locationEntry.getText().isEmpty()){ //if NOT empty, allow button press
                     SerialReader.serialBuffer = "";
-                    serialIO.getSerialWriter().setMessageToWrite("t"); //successfully sending to ESP32-> confirmed w/echo program
+                    serialIO.getSerialWriter().setMessageToWrite("t");
                     if (e.getSource() == transferWindow.transferdatabutton){
                         SerialReader.didIAsk = true;
-                        String text = transferWindow.locationEntry.getText(); //get text from text box entry
-                        filename = text +"_"+ date +".csv"; //get time from RTC and add to file name
+                        view.folder = appDir; //sweet i think this works!!!!
+                        String text = transferWindow.locationEntry.getText();
+                        filename = text +"_"+ date +".csv";
                         System.out.println("Time: "+ datetime);
-                        String location = "..\\495_prototype\\TestFolder"; //nice
-                        File outputFile = new File(location, filename);
+                        File outputFile = new File(appDir, filename);
                         System.out.println(filename);
 
                         try(FileWriter writer = new FileWriter(outputFile)){
-                            //writer.write(writeHeader()); //append
-                            SerialReader.sleep(10000); //needs to be longer?? Add a loading screen??//until no more bytes to be read
-                            writer.write(writeHeader()+SerialReader.serialBuffer); //why are we missing the 1st data point?
+                            SerialReader.sleep(10000);
+                            writer.write(writeHeader()+SerialReader.serialBuffer);
                             view.showContents();
                             System.out.println("File created successfully!");
 
