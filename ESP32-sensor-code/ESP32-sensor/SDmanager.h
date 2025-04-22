@@ -27,8 +27,8 @@ void removeSDFile(){
 void writeSensorDataToSD(){
   File dataFile = SD.open(FILENAME, FILE_APPEND);
   if(dataFile){
-    dataFile.print(epochSeconds);
-    dataFile.print(", ");
+//    dataFile.print(epochSeconds);
+//    dataFile.print(", ");
     dataFile.print(modDataString);
     dataFile.close();
   }
@@ -68,7 +68,7 @@ void writeRawSensorDataToSD(float rawdata[3][6][WINDOW_SIZE], int classification
 
 void readDataFromSD(){
   File dataFile = SD.open(FILENAME, FILE_READ);
-  String fileTransferString = "";
+//  String fileTransferString = "";
   if(dataFile){
      while(dataFile.available()){
 //      fileTransferString.concat(dataFile.read());
@@ -78,12 +78,12 @@ void readDataFromSD(){
 //     int transferLen = fileTransferString.length() + 1;
 //     char charArrayFile[transferLen];
 //     fileTransferString.toCharArray(charArrayFile,transferLen);
-     unsigned char* hash=MD5::make_hash("hello world");
-     //generate the digest (hex encoding) of our hash
-     md5str = MD5::make_digest(hash, 16);
-     
-     free(hash);      
-//    Serial.print(fileTransferString);
+//     unsigned char* hash=MD5::make_hash(charArrayFile);
+//     //generate the digest (hex encoding) of our hash
+//     md5str = MD5::make_digest(hash, 16);
+//     
+//     free(hash);      
+//     Serial.print(fileTransferString);
      dataFile.close();
   }
   else{

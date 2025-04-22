@@ -17,8 +17,9 @@
         <dependency>
             <groupId>org.tinyb</groupId>
             <artifactId>tinyb</artifactId>
-            <version>0.5.0</version> <!-- Check for the latest version -->
+            <version>2.4.0</version>
         </dependency>
+
     </dependencies>
 
 </project>

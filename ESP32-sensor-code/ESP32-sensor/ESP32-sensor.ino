@@ -1,11 +1,11 @@
 #define WAKEUP_INT_PIN GPIO_NUM_13
-#define CALIBRATION_ITERATIONS 100
-#define COLLECTION_MODE false
+#define CALIBRATION_ITERATIONS 50
+#define COLLECTION_MODE true
 #define WOM_threshold 15 //Wake On Motion (milli-g)
 
-#define WINDOW_SIZE 51
+#define WINDOW_SIZE 50
 
-unsigned long epochSeconds = 0;
+RTC_DATA_ATTR unsigned long epochSeconds;
 char *md5str;
 
 #include <ESP32Time.h>
@@ -19,7 +19,7 @@ char *md5str;
 #include "driver/rtc_io.h" //This is needed for deep sleep wakeup pin configuration
 #include <cmath>
 
-ESP32Time rtc(-21600);  // offset in seconds GMT+1
+RTC_DATA_ATTR ESP32Time rtc(-21600);  // offset in seconds GMT+1
 
 unsigned long startCycleMillis, stopCycleMillis;
 unsigned long startSetupMillis, stopSetupMillis;
@@ -106,18 +106,18 @@ void setup()
     calibrateSensors(CALIBRATION_ITERATIONS);
     state = State::SLEEP;
     collectionModeClassification=0;
+    rtc.setTime(1744386280);
   }
   
   stopSetupMillis = millis();
-  Serial.print("Setup Time (ms): ");
-  Serial.println(stopSetupMillis - startSetupMillis);
+//  Serial.print("Setup Time (ms): ");
+//  Serial.println(stopSetupMillis - startSetupMillis);
   num_wakeups++;
   //change this code to be on Java application startup
   
 //  Serial.println("Please input current time in epoch seconds");
 //  epochSeconds = Serial.parseInt();
 //  Serial.println(epochSeconds);
-//  rtc.setTime(epochSeconds);
 }
 
 ///////////////////////////////////////
@@ -200,14 +200,26 @@ void loop()
       break;
     case State::SD_READ:
       readDataFromSD(); 
-      state = State::IDLE;
+      state = State::SLEEP;
       break;
     case State::SLEEP:
-      Serial.println("Entering Deep Sleep");
+//      Serial.println("Entering Deep Sleep");
+//      switchSensorTo(State::SENSOR1_COLLECTION);
+//      delay(50);
+//      currentICM.sleep(true);
+//      currentICM.lowPower(true);
+//      switchSensorTo(State::SENSOR3_COLLECTION);
+//      delay(50);
+//      currentICM.sleep(true);
+//      currentICM.lowPower(true);
       switchSensorTo(State::SENSOR2_COLLECTION);
+//      delay(50);
+//      currentICM.sleep(false);
+//      currentICM.lowPower(false);
       //Hold AD0 pins high during sleep ref
       //https://electronics.stackexchange.com/questions/350158/esp32-how-to-keep-a-pin-high-during-deep-sleep-rtc-gpio-pull-ups-are-too-weak
-
+//      digitalWrite(2, LOW);
+//      digitalWrite(4, LOW);  
       //Lock AD0 pins 
       gpio_hold_en((gpio_num_t)SENSOR1_AD0_PIN);  
       gpio_hold_en((gpio_num_t)SENSOR2_AD0_PIN);  
@@ -255,7 +267,6 @@ void handleUserInput(){
     state = State::IDLE;
   }
   else if(input == "t"){
-    Serial.println("Transferring data");
     state = State::SD_READ;  
   }
   else if(input == "s"){

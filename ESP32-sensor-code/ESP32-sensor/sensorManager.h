@@ -30,6 +30,9 @@ void initializeSensors(){
       initialized = true;
     }
   }
+//  currentICM.sleep(false);
+//  currentICM.lowPower(false);
+
 
   digitalWrite(SENSOR1_AD0_PIN, LOW);
   digitalWrite(SENSOR2_AD0_PIN, HIGH);
@@ -51,6 +54,8 @@ void initializeSensors(){
       initialized = true;
     }
   }
+//  currentICM.sleep(false);
+//  currentICM.lowPower(false);
 
   digitalWrite(SENSOR1_AD0_PIN, LOW);
   digitalWrite(SENSOR2_AD0_PIN, LOW);
@@ -72,4 +77,6 @@ void initializeSensors(){
       initialized = true;
     }
   }
+//  currentICM.sleep(false);
+//  currentICM.lowPower(false);
 }

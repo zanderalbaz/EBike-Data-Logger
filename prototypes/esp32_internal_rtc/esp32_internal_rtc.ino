@@ -23,9 +23,9 @@
 */
 
 #include <ESP32Time.h>
-unsigned long epochSeconds = 0;
+RTC_DATA_ATTR unsigned long epochSeconds = 0;
 //ESP32Time rtc;
-ESP32Time rtc(-21600);  // offset in seconds GMT+1
+RTC_DATA_ATTR ESP32Time rtc(-21600);  // offset in seconds GMT+1
 
 void setup() {
   Serial.begin(115200);
