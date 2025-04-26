@@ -2,7 +2,6 @@
 
 import javax.swing.*;
 import java.awt.event.ActionListener;
-import java.lang.constant.ModuleDesc;
 
 public class TransferWindow extends JPanel{
     private JLabel label;
