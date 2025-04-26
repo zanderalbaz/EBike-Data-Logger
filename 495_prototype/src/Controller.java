@@ -1,13 +1,11 @@
 //CONTROLLER
 
-import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.Objects;
 
 public class Controller {
     private Model model; // don't need this??
@@ -110,41 +108,57 @@ public class Controller {
                         try(FileWriter writer = new FileWriter(outputFile)){
                             writer.write(writeHeader()); //append
                             System.out.println("File created successfully!");
-                            SerialReader.sleep(10000); //needs to be longer?? Add a loading screen??//until no more bytes to be read
-                            writer.write(writeHeader()+SerialReader.serialBuffer); //why are we missing the 1st data point?
+//                            SerialReader.sleep(10000); //needs to be longer?? Add a loading screen??//until no more bytes to be read
+                            //Insert Serial Parser Here.
+                            //Wait until data starts
+                            System.out.println("Waiting for data to transfer");
+                            while(!SerialReader.serialBuffer.contains(":start:")){
+                                System.out.println(SerialReader.serialBuffer);
+                            }
+                            int startIndex = SerialReader.serialBuffer.indexOf(":start:");
+                            //Wait until chunk is sent
+                            System.out.println("Data Transferring");
+                            System.out.println("Waiting for end of data chunk");
+                            while(!SerialReader.serialBuffer.contains("\r\n\r\n")){
+                                System.out.println(SerialReader.serialBuffer);
+                            }
+                            int endIndex = SerialReader.serialBuffer.indexOf("\r\n\r\n");
+
+                            //Start Parsing data
+                            String dataChunk = SerialReader.serialBuffer.substring(startIndex, endIndex);
+                            int hashStartIndex = dataChunk.indexOf(":hash:");
+                            int hashEndIndex = dataChunk.indexOf("\n");
+                            String hashFromSerial = dataChunk.substring(hashStartIndex+6, hashEndIndex).strip();
+                            System.out.println("HASH: " + hashFromSerial);
+
+                            int dataStartIndex = dataChunk.indexOf(":data:");
+                            String data = dataChunk.substring(dataStartIndex+6);
+                            System.out.println("DATA: " + data);
+
+                            //CREATE HASH
+                            String hashFromJava = hash.createMD5Hash(data); //5eb63bbbe01eeed093cb22bb8f5acdc3 -> hello world
+                            if(hashFromSerial.equals(hashFromJava)){
+                                System.out.println("Hashes matched -> data transfer success!");
+                                Model.transferSuccess = true;
+                            }
+                            else {
+                                System.out.println("hashes do not match -> that is not good");
+                                System.out.println(" ESP:" + hashFromSerial);
+                                System.out.println("JAVA:" + hashFromJava);
+                                Model.transferSuccess = false;
+                            }
+
+
+                            writer.write(data); //why are we missing the 1st data point?
                             view.showContents();
 
                         }catch(IOException q){
                             System.out.println("ERROR writing to csv");
-                        } catch (InterruptedException ex) {
-                            throw new RuntimeException(ex);
-                        }
-
-                        String myHash;
-                        //CREATE HASH
-                        try {
-                            myHash = hash.createMD5Hash(SerialReader.serialBuffer); //5eb63bbbe01eeed093cb22bb8f5acdc3 -> hello world
-                            System.out.println(myHash);
                         } catch (Exception ex) {
                             throw new RuntimeException(ex);
                         }
 
-                        //POTENTIALLY PROBLEMATIC CODE:
-                        SerialReader.serialBuffer = "";
-                        serialIO.getSerialWriter().setMessageToWrite("h"); //will get hash data from arduino
-                        SerialReader.inputHash = SerialReader.serialBuffer;
-
-
                         //COMPARE HASHES
-                        if(Objects.equals(myHash, SerialReader.inputHash)){
-                            System.out.println("Hashes matched -> data transfer success!");
-                            Model.transferSuccess = true;
-                        }else{
-                            System.out.println("hashes do not match -> that is not good");
-                            System.out.println("myHash: "+ myHash);
-                            System.out.println("inputHash: "+ SerialReader.inputHash);
-                            Model.transferSuccess = false; //model or Model???
-                        }
 
                         eBikeDataLogger.getCardLayout().show(eBikeDataLogger.getCardPanel(), "transferConfirmWindow");
                         eBikeDataLogger.setTitle("BLM E-bike Data Logger - Confirm Transfer");

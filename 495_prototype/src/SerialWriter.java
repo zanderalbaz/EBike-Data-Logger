@@ -24,6 +24,7 @@ public class SerialWriter extends Thread {
         while(true) {
             if (getMessageToWrite() != null) {
                 //System.out.println("serialWriter is active");
+                System.out.println("Sending message: " + getMessageToWrite());
                 data_to_send = getMessageToWrite().getBytes(StandardCharsets.UTF_8);
                 comPort.writeBytes(data_to_send, data_to_send.length);
                 setMessageToWrite(null);

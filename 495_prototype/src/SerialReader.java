@@ -10,7 +10,7 @@ import java.io.InputStream;
 //Modified for our use case
 public class SerialReader extends Thread{
     private SerialPort comPort = null;
-    public static String serialBuffer;
+    public static String serialBuffer = "";
     public static boolean didIAsk = true; //should be private with getter
     public SerialReader(SerialPort comPort){
         this.comPort = comPort;
@@ -28,7 +28,6 @@ public class SerialReader extends Thread{
                         //System.out.print((char) in.read()); //THISSSS WRITES TO TERMINAL THE INPUT FROM ARDUINO
                         serialBuffer += ((char) in.read());
                     }
-
                 }
             }
         } catch (Exception e) {
