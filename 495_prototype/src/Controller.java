@@ -224,7 +224,7 @@ public class Controller {
                 }
             }
         }
-        headerList += ("Label");
+        headerList += ("Label\n");
         return headerList;
     }
 }
