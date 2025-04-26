@@ -21,9 +21,6 @@ public class Controller {
     private HashGenerator hash;
 
     private static File appDir;
-    public static File getAppDir() {
-        return appDir;
-    }
     private String filename;
 
     public Controller(Model model, EBikeDataLogger eBikeDataLogger, SerialIO serialIO) { //do i need to add all of these here?
@@ -39,7 +36,7 @@ public class Controller {
         LocalDate date = LocalDate.now();
 
         String userHome = System.getProperty("user.home");
-        String appFolderName = ".EBikeData";
+        String appFolderName = "EBikeData";
         appDir = new File(userHome, appFolderName);
 
         if (!appDir.exists()) {
@@ -91,7 +88,8 @@ public class Controller {
             public void actionPerformed(ActionEvent e) {
                 try{
                     //File fileToOpen = new File("..\\495_prototype\\TestFolder\\"+view.fileListDisplay.getSelectedValue()); //HOLY SHIT IT WORKSS
-                    File fileToOpen = new File(appDir+view.fileListDisplay.getSelectedValue());
+                    File fileToOpen = new File(appDir+"\\"+view.fileListDisplay.getSelectedValue());
+                    System.out.println(fileToOpen);
                     if(fileToOpen != null){
                         System.out.println("OPENING FILE...");
                         openFile(fileToOpen);
