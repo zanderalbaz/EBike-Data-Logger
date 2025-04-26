@@ -1,9 +1,7 @@
 //VIEW OF VIEW (HISTORIC DATA) WINDOW
 
 import javax.swing.*;
-import javax.swing.text.View;
-import java.awt.*;
-import java.awt.event.ActionListener; // important once back button implemented
+import java.awt.event.ActionListener;
 import java.io.File;
 
 public class ViewWindow extends JPanel{
@@ -25,7 +23,7 @@ public class ViewWindow extends JPanel{
 
         button_home.setBounds(10, 10, 50, 20);
         add(button_home);
-        showContents(); //where should this be called so that it shows when no connection AND updates after a new CSV is added
+//        showContents(); //where should this be called so that it shows when no connection AND updates after a new CSV is added
 
         openButton.setBounds(300,400,70,30);
         add(openButton);

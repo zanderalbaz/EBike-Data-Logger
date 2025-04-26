@@ -159,8 +159,9 @@ public class Controller {
                             //CREATE HASH
                             String hashFromJava = hash.createMD5Hash(data); //5eb63bbbe01eeed093cb22bb8f5acdc3 -> hello world
                             if(hashFromSerial.equals(hashFromJava)){
-                                System.out.println("Hashes matched -> data transfer success!");
                                 Model.transferSuccess = true;
+                                System.out.println("Hashes matched -> data transfer success!");
+                                System.out.println(Model.transferSuccess);
                             }
                             else {
                                 System.out.println("hashes do not match -> that is not good");
@@ -173,6 +174,9 @@ public class Controller {
                             writer.write(data); //why are we missing the 1st data point?
                             view.showContents();
                             System.out.println("File created successfully!");
+                            transferConfirmWindow.updateConfirmationText();
+                            eBikeDataLogger.getCardLayout().show(eBikeDataLogger.getCardPanel(), "transferConfirmWindow");
+                            eBikeDataLogger.setTitle("BLM E-bike Data Logger - Confirm Transfer");
 
                         }catch(IOException q){
                             System.out.println("ERROR writing to csv");
@@ -180,10 +184,6 @@ public class Controller {
                             throw new RuntimeException(ex);
                         }
 
-                        //COMPARE HASHES
-
-                        eBikeDataLogger.getCardLayout().show(eBikeDataLogger.getCardPanel(), "transferConfirmWindow");
-                        eBikeDataLogger.setTitle("BLM E-bike Data Logger - Confirm Transfer");
                     }
                 }
             }
