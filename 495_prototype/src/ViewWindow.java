@@ -28,21 +28,23 @@ public class ViewWindow extends JPanel{
         openButton.setBounds(300,400,70,30);
         add(openButton);
 
+        DefaultListModel<String> fileList = new DefaultListModel<>();
+        fileListDisplay = new JList<>(fileList);
+        fileListDisplay.setBounds(250,70,200,300); //should prob fix the layout but this is necessary for now
+        add(fileListDisplay); //bc static
     }
     public void viewToHomeButton(ActionListener listener) {
         button_home.addActionListener(listener);
     }
     public void showContents(){
         //File folder = new File("..\\495_prototype\\TestFolder");
-        //File folder = new File(contoller.appDir);
+//        File folder = new File(contoller.appDir);
         DefaultListModel<String> fileList = new DefaultListModel<>();
         if (folder.exists() && folder.isDirectory()) {
             for (File file : folder.listFiles()) {
                 fileList.addElement(file.getName());
             }
-            fileListDisplay = new JList<>(fileList);
-            fileListDisplay.setBounds(250,70,200,300); //should prob fix the layout but this is necessary for now
-            add(fileListDisplay); //bc static
+            fileListDisplay.setModel(fileList);
         }
     }
     public void openSelectedFile(ActionListener listener){openButton.addActionListener(listener);}

@@ -28,6 +28,9 @@ public class SerialReader extends Thread{
                         //System.out.print((char) in.read()); //THISSSS WRITES TO TERMINAL THE INPUT FROM ARDUINO
                         serialBuffer += ((char) in.read());
                     }
+                    if(!didIAsk){
+                        break;
+                    }
                 }
             }
         } catch (Exception e) {

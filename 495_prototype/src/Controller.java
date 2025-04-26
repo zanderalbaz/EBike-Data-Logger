@@ -47,7 +47,8 @@ public class Controller {
                 return;
             }
         }
-
+        view.folder = appDir;
+        view.showContents();
 
         this.home.transferButton(new ActionListener() {
             @Override
@@ -120,7 +121,6 @@ public class Controller {
                     serialIO.getSerialWriter().setMessageToWrite("t");
                     if (e.getSource() == transferWindow.transferdatabutton){
                         SerialReader.didIAsk = true;
-                        view.folder = appDir; //sweet i think this works!!!!
                         String text = transferWindow.locationEntry.getText();
                         filename = text +"_"+ date +".csv";
                         System.out.println("Time: "+ datetime);
@@ -172,18 +172,17 @@ public class Controller {
 
 
                             writer.write(data); //why are we missing the 1st data point?
-                            view.showContents();
                             System.out.println("File created successfully!");
                             transferConfirmWindow.updateConfirmationText();
                             eBikeDataLogger.getCardLayout().show(eBikeDataLogger.getCardPanel(), "transferConfirmWindow");
                             eBikeDataLogger.setTitle("BLM E-bike Data Logger - Confirm Transfer");
-
                         }catch(IOException q){
                             System.out.println("ERROR writing to csv");
                         } catch (Exception ex) {
                             throw new RuntimeException(ex);
                         }
-
+                        System.out.println("Done writing to local file");
+                        view.showContents();
                     }
                 }
             }
@@ -192,6 +191,7 @@ public class Controller {
         this.transferConfirmWindow.viewData(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
+                view.showContents();
                 eBikeDataLogger.getCardLayout().show(eBikeDataLogger.getCardPanel(), "viewWindow");
                 eBikeDataLogger.setTitle("BLM E-bike Data Logger - View Data");
             }
