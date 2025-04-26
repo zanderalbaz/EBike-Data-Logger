@@ -10,6 +10,11 @@ public class Home extends JPanel{ // I think this is creating the frame
     private JLabel label;
 
     public Home() {
+        try {
+            UIManager.setLookAndFeel("javax.swing.plaf.nimbus.NimbusLookAndFeel"); //com.sun.java.swing.plaf.windows.WindowsLookAndFeel
+        } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | UnsupportedLookAndFeelException e) {
+            e.printStackTrace();
+        }
 
         setLayout(null);
 

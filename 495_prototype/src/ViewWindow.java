@@ -11,7 +11,13 @@ public class ViewWindow extends JPanel{
     private JButton button_home= new JButton("<-");
     private JButton openButton = new JButton("Open");
     public JList<String> fileListDisplay;
+    File folder;
     public ViewWindow() {
+        try {
+            UIManager.setLookAndFeel("javax.swing.plaf.nimbus.NimbusLookAndFeel"); //com.sun.java.swing.plaf.windows.WindowsLookAndFeel
+        } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | UnsupportedLookAndFeelException e) {
+            e.printStackTrace();
+        }
         setLayout(null); //no layout manager -> everything is manual
         label = new JLabel("BLM E-bike Data Viewer");
         label.setBounds(300, 0, 200, 70);
@@ -29,7 +35,8 @@ public class ViewWindow extends JPanel{
         button_home.addActionListener(listener);
     }
     public void showContents(){
-        File folder = new File("..\\495_prototype\\TestFolder");
+        //File folder = new File("..\\495_prototype\\TestFolder");
+        //File folder = new File(contoller.appDir);
         DefaultListModel<String> fileList = new DefaultListModel<>();
         if (folder.exists() && folder.isDirectory()) {
             for (File file : folder.listFiles()) {

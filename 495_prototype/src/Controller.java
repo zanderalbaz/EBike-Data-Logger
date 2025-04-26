@@ -6,6 +6,8 @@ import java.awt.event.ActionListener;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.time.LocalDate;
+import java.time.LocalTime;
 
 public class Controller {
     private Model model; // don't need this??
@@ -17,6 +19,7 @@ public class Controller {
     private SerialIO serialIO;
     private HashGenerator hash;
 
+    private static File appDir;
     private String filename;
 
     public Controller(Model model, EBikeDataLogger eBikeDataLogger, SerialIO serialIO, HashGenerator hash) { //do i need to add all of these here?
@@ -27,7 +30,23 @@ public class Controller {
         this.view = eBikeDataLogger.getViewWindowPanel();
         this.transferConfirmWindow = eBikeDataLogger.getTransferConfirmWindowPanel();
         this.serialIO = serialIO;
-        //this.hash = new HashGenerator();
+        this.hash = new HashGenerator();
+        LocalTime datetime = LocalTime.now();
+        LocalDate date = LocalDate.now();
+
+        String userHome = System.getProperty("user.home");
+        String appFolderName = "EBikeData";
+        appDir = new File(userHome, appFolderName);
+
+        if (!appDir.exists()) {
+            boolean created = appDir.mkdirs();
+            if (created) {
+                System.out.println("Created app folder at: " + appDir.getAbsolutePath());
+            } else {
+                System.err.println("Failed to create app folder.");
+                return;
+            }
+        }
 
 
         this.home.transferButton(new ActionListener() {
@@ -67,7 +86,9 @@ public class Controller {
             @Override
             public void actionPerformed(ActionEvent e) {
                 try{
-                    File fileToOpen = new File("..\\495_prototype\\TestFolder\\"+view.fileListDisplay.getSelectedValue()); //HOLY SHIT IT WORKSS
+                    //File fileToOpen = new File("..\\495_prototype\\TestFolder\\"+view.fileListDisplay.getSelectedValue()); //HOLY SHIT IT WORKSS
+                    File fileToOpen = new File(appDir+"\\"+view.fileListDisplay.getSelectedValue());
+                    System.out.println(fileToOpen);
                     if(fileToOpen != null){
                         System.out.println("OPENING FILE...");
                         openFile(fileToOpen);
@@ -96,19 +117,19 @@ public class Controller {
             public void actionPerformed(ActionEvent e) {
                 if(!transferWindow.locationEntry.getText().isEmpty()){ //if NOT empty, allow button press
                     SerialReader.serialBuffer = "";
-                    serialIO.getSerialWriter().setMessageToWrite("t"); //successfully sending to ESP32-> confirmed w/echo program
+                    serialIO.getSerialWriter().setMessageToWrite("t");
                     if (e.getSource() == transferWindow.transferdatabutton){
                         SerialReader.didIAsk = true;
-                        String text = transferWindow.locationEntry.getText(); //get text from text box entry
-                        filename = text + ".csv"; //get time from RTC and add to file name
-                        String location = "..\\495_prototype\\TestFolder"; //nice
-                        File outputFile = new File(location, filename);
+                        view.folder = appDir; //sweet i think this works!!!!
+                        String text = transferWindow.locationEntry.getText();
+                        filename = text +"_"+ date +".csv";
+                        System.out.println("Time: "+ datetime);
+                        File outputFile = new File(appDir, filename);
                         System.out.println(filename);
 
                         try(FileWriter writer = new FileWriter(outputFile)){
                             writer.write(writeHeader()); //append
                             System.out.println("File created successfully!");
-//                            SerialReader.sleep(10000); //needs to be longer?? Add a loading screen??//until no more bytes to be read
                             //Insert Serial Parser Here.
                             //Wait until data starts
                             System.out.println("Waiting for data to transfer");
@@ -151,6 +172,7 @@ public class Controller {
 
                             writer.write(data); //why are we missing the 1st data point?
                             view.showContents();
+                            System.out.println("File created successfully!");
 
                         }catch(IOException q){
                             System.out.println("ERROR writing to csv");
@@ -184,7 +206,7 @@ public class Controller {
             }
     }
     public String writeHeader(){
-        String headerList = "";
+        String headerList = "Timestamp,";
         String sensorType;
         String sensorNum;
         String dimension;
@@ -221,6 +243,7 @@ public class Controller {
                         stat = "std";
                     }
                     headerList += (sensorType+dimension+sensorNum+":"+stat+", ");
+                    //System.out.println("lick my nuts: "+i+" "+j+" "+k);
                 }
             }
         }
