@@ -35,7 +35,7 @@ public class Controller {
         LocalDate date = LocalDate.now();
 
         String userHome = System.getProperty("user.home");
-        String appFolderName = "EBikeData";
+        String appFolderName = ".EBikeData";
         appDir = new File(userHome, appFolderName);
 
         if (!appDir.exists()) {

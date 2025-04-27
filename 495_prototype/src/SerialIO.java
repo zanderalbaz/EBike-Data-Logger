@@ -1,6 +1,4 @@
-import com.fazecast.jSerialComm.*;
-import java.io.IOException;
-import java.io.InputStream;
+import com.fazecast.jSerialComm.SerialPort;
 
 
 public class SerialIO  implements AutoCloseable{
@@ -11,7 +9,7 @@ public class SerialIO  implements AutoCloseable{
 
     public SerialIO(int baudRate, boolean verbose){
             try {
-                setComPort(); //risky code+
+                setComPort();
                 if (verbose) {
                     for (SerialPort port : SerialPort.getCommPorts()) {
                         String portName = port.getSystemPortName();

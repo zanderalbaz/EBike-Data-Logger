@@ -1,5 +1,7 @@
 #define SD_CHIP_SELECT 5
 #define FILENAME "/test.csv"
+#define FILE_HASH_BUFFSIZE 32768
+
 
 extern String modDataString;
 extern float dataOffsets[3][6];
@@ -94,6 +96,7 @@ void readDataFromSD(){
         free(hash);
         free(md5str);
         free(fileTransferString);
+//          Serial.print(dataFile.read());
      }
      dataFile.close();
      Serial.print(":end:");
