@@ -47,6 +47,7 @@ void initializeSD(){
 
 void readDataFromSD(){
   File dataFile = SD.open(FILENAME, FILE_READ);
+  byte key = 0xE1;
 
   if(dataFile){
      Serial.print(":start:");
@@ -59,9 +60,9 @@ void readDataFromSD(){
         else {
           bytesToRead = FILE_HASH_BUFFSIZE;
         }
-        char* fileTransferString = (char*) malloc(FILE_HASH_BUFFSIZE+1);
+        char* fileTransferString = (char*) malloc(FILE_HASH_BUFFSIZE);
         int numBytesRead = dataFile.readBytes(fileTransferString, bytesToRead);
-        fileTransferString[numBytesRead] = '\0';
+        xorCipher(fileTransferString, numBytesRead, key);
         unsigned char* hash=MD5::make_hash(fileTransferString);
         char *md5str = MD5::make_digest(hash, 16);
         Serial.print(":hash:");
@@ -103,5 +104,12 @@ void removeSDFile(){
   SD.remove(FILENAME);
   if(!SD.exists(FILENAME)){
     Serial.println("File was deleted sucessfully");
+  }
+}
+//Cipher reference:
+//https://www.geeksforgeeks.org/xor-cipher/
+void xorCipher(char* data, int dataLen, byte key) {
+  for (int i = 0; i < dataLen; i++) {
+    data[i] = data[i] ^ key; 
   }
 }

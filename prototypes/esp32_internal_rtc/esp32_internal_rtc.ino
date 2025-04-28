@@ -21,61 +21,47 @@
   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
   SOFTWARE.
 */
-
+#include "esp_timer.h"
 #include <ESP32Time.h>
+int SECONDS_TO_SLEEP = 60;
 RTC_DATA_ATTR unsigned long epochSeconds = 0;
+RTC_DATA_ATTR int bootNum = 0;
+
 //ESP32Time rtc;
 RTC_DATA_ATTR ESP32Time rtc(-21600);  // offset in seconds GMT+1
 
 void setup() {
+  esp_sleep_wakeup_cause_t wakeup_reason;
+
+  wakeup_reason = esp_sleep_get_wakeup_cause();
   Serial.begin(115200);
   while(!Serial);
-  Serial.println("Please input current time in epoch seconds");
-  while(!Serial.available());
-  epochSeconds = Serial.parseInt();
-  Serial.println(epochSeconds);
-  rtc.setTime(epochSeconds);
-  //rtc.offset = 7200; // change offset value
+  if(bootNum == 0){
+    Serial.println("Please input current time in epoch seconds");
+    while(!Serial.available());
+    epochSeconds = Serial.parseInt();
+    Serial.println(epochSeconds);
+    rtc.setTime(epochSeconds);
+  }
+  if( wakeup_reason == ESP_SLEEP_WAKEUP_TIMER){
+    Serial.println("Timer Wakeup");
+    epochSeconds += SECONDS_TO_SLEEP;
+    rtc.setTime(epochSeconds);
+    Serial.println(epochSeconds);
+  }
+  
+  esp_sleep_enable_timer_wakeup(SECONDS_TO_SLEEP * 1000000);
+  bootNum++;
+//  epochSeconds = rtc.getEpoch();
+  esp_deep_sleep_start();
 
-/*---------set with NTP---------------*/
-//  configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
-//  struct tm timeinfo;
-//  if (getLocalTime(&timeinfo)){
-//    rtc.setTimeStruct(timeinfo); 
-//  }
 }
 
 void loop() {
-//  Serial.println(rtc.getTime());          //  (String) 15:24:38
-//  Serial.println(rtc.getDate());          //  (String) Sun, Jan 17 2021
-//  Serial.println(rtc.getDate(true));      //  (String) Sunday, January 17 2021
-//  Serial.println(rtc.getDateTime());      //  (String) Sun, Jan 17 2021 15:24:38
-//  Serial.println(rtc.getDateTime(true));  //  (String) Sunday, January 17 2021 15:24:38
-//  Serial.println(rtc.getTimeDate());      //  (String) 15:24:38 Sun, Jan 17 2021
-//  Serial.println(rtc.getTimeDate(true));  //  (String) 15:24:38 Sunday, January 17 2021
-//
-//  Serial.println(rtc.getMicros());        //  (long)    723546
-//  Serial.println(rtc.getMillis());        //  (long)    723
-//  Serial.println(rtc.getEpoch());         //  (long)    1609459200
-//  Serial.println(rtc.getSecond());        //  (int)     38    (0-59)
-//  Serial.println(rtc.getMinute());        //  (int)     24    (0-59)
-//  Serial.println(rtc.getHour());          //  (int)     3     (1-12)
-//  Serial.println(rtc.getHour(true));      //  (int)     15    (0-23)
-//  Serial.println(rtc.getAmPm());          //  (String)  pm
-//  Serial.println(rtc.getAmPm(true));      //  (String)  PM
-//  Serial.println(rtc.getDay());           //  (int)     17    (1-31)
-//  Serial.println(rtc.getDayofWeek());     //  (int)     0     (0-6)
-//  Serial.println(rtc.getDayofYear());     //  (int)     16    (0-365)
-//  Serial.println(rtc.getMonth());         //  (int)     0     (0-11)
-//  Serial.println(rtc.getYear());          //  (int)     2021
-
-//  Serial.println(rtc.getLocalEpoch());         //  (long)    1609459200 epoch without offset
-  Serial.println(rtc.getTime("%A, %B %d %Y %H:%M:%S"));   // (String) returns time with specified format 
-  // formating options  http://www.cplusplus.com/reference/ctime/strftime/
+  Serial.println(rtc.getEpoch());   // (String) returns time with specified format 
 
 
   struct tm timeinfo = rtc.getTimeStruct();
-  //Serial.println(&timeinfo, "%A, %B %d %Y %H:%M:%S");   //  (tm struct) Sunday, January 17 2021 07:24:38
   
   delay(1000);
 }

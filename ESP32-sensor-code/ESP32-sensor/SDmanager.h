@@ -41,7 +41,7 @@ void writeSensorDataToSD(){
 
 void writeRawSensorDataToSD(float rawdata[3][6][WINDOW_SIZE], int classification){
   String rawDataString = "";
-  for (int k =1; k < WINDOW_SIZE; k++){
+  for (int k =0; k < WINDOW_SIZE; k++){
     rawDataString += String(k); //Write data index
     rawDataString += ", ";
     for (int i =0; i < 3; i++){
@@ -85,18 +85,29 @@ void readDataFromSD(){
         char* fileTransferString = (char*) malloc(FILE_HASH_BUFFSIZE+1);
         int numBytesRead = dataFile.readBytes(fileTransferString, bytesToRead);
         fileTransferString[numBytesRead] = '\0';
+//        Compute hash
         unsigned char* hash=MD5::make_hash(fileTransferString);
         char *md5str = MD5::make_digest(hash, 16);
+        
+//        Compute Cipher
+        long key = 9173287;
+
+        for (int i = 0; i < numBytesRead; i++) {
+          int offset = (int)(sin(i+key)*12697 + 7057);
+          fileTransferString[i] = (fileTransferString[i] + offset) % 256 + 1;
+        }
+        
+
+//        Send it
         Serial.print(":hash:");
         Serial.println(md5str);
         Serial.print(":data:");
         Serial.println(fileTransferString);
         Serial.println("\r\n\r\n");
-      
+//       Avoid mem leaks
         free(hash);
         free(md5str);
         free(fileTransferString);
-//          Serial.print(dataFile.read());
      }
      dataFile.close();
      Serial.print(":end:");
