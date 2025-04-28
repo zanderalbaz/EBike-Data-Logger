@@ -6,6 +6,7 @@ import java.awt.event.ActionListener;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.LocalTime;
 
@@ -160,17 +161,19 @@ public class Controller {
                                 int dataStartIndex = dataChunk.indexOf(":data:");
                                 String data = dataChunk.substring(dataStartIndex + 6);
                                 System.out.println("DATA: " + data);
-                                byte[] dataBytes = data.getBytes();
-                                String decryptedData = "";
+                                System.out.println("Data Length: " + data.length());
+                                byte[] dataBytes = data.getBytes(StandardCharsets.ISO_8859_1); //Avoid UTF-8 conversion mismatches
                                 for (int i =0; i< dataBytes.length; i++){
-                                    decryptedData += (byte)(dataBytes[i] ^ (byte)0xE1);
+                                    dataBytes[i] = (byte)(dataBytes[i] ^ (byte)0xE1);
                                 }
+                                System.out.println("Bytes Length: " + dataBytes.length);
+                                String decryptedData = new String(dataBytes, StandardCharsets.UTF_8);
+                                System.out.println("Decrypted Length:" + decryptedData.length());
                                 System.out.println("DECRYPTED:" + decryptedData);
 
                                 //CREATE HASH
-                                String hashFromJava = hash.createMD5Hash(data); //5eb63bbbe01eeed093cb22bb8f5acdc3 -> hello world
+                                String hashFromJava = hash.createMD5Hash(decryptedData); //5eb63bbbe01eeed093cb22bb8f5acdc3 -> hello world
                                 if (hashFromSerial.equals(hashFromJava)) {
-                                    Model.transferSuccess = true;
                                     System.out.println("Hashes matched -> data transfer success!");
                                     System.out.println(Model.transferSuccess);
                                 } else {
@@ -178,12 +181,21 @@ public class Controller {
                                     System.out.println(" ESP:" + hashFromSerial);
                                     System.out.println("JAVA:" + hashFromJava);
                                     Model.transferSuccess = false;
+                                    if (outputFile.exists()) {
+                                        boolean deleted = outputFile.delete();
+                                        if(deleted){
+                                            System.out.println("File Deleted");
+                                        }
+                                        else{
+                                            System.out.println("Could not delete file");
+                                        }
+                                    }
                                     break;
                                 }
 
-                                startIndex = endIndex+8;
+                                startIndex = endIndex+6;
                                 System.out.println("Updating index");
-                                writer.write(data); //why are we missing the 1st data point?
+                                writer.write(decryptedData); //why are we missing the 1st data point?
                             }
                             System.out.println("File created successfully!");
                             transferConfirmWindow.updateConfirmationText();
