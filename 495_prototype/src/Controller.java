@@ -32,8 +32,9 @@ public class Controller {
         this.transferConfirmWindow = eBikeDataLogger.getTransferConfirmWindowPanel();
         this.serialIO = serialIO;
         this.hash = new HashGenerator();
-        LocalTime datetime = LocalTime.now();
+        LocalTime time = LocalTime.now();
         LocalDate date = LocalDate.now();
+        long epoch = java.time.Instant.now().getEpochSecond();
 
         String userHome = System.getProperty("user.home");
         String appFolderName = ".EBikeData";
@@ -51,6 +52,7 @@ public class Controller {
         view.folder = appDir;
         view.showContents();
 
+
         this.home.transferButton(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -60,6 +62,8 @@ public class Controller {
                     serialIO.getSerialWriter().setMessageToWrite("CONNECTED TO SENSOR" + '\n');
                     Model.connectionValid = true;
                     System.out.println("CONNECTED TO SENSOR");
+                    serialIO.getSerialWriter().setMessageToWrite("u"+epoch);
+                    System.out.println("u"+epoch);
                 }catch(Exception f){
                     Model.connectionValid = false;
                     System.out.println("CONNECTION FAILED");
@@ -88,7 +92,6 @@ public class Controller {
             @Override
             public void actionPerformed(ActionEvent e) {
                 try{
-                    //File fileToOpen = new File("..\\495_prototype\\TestFolder\\"+view.fileListDisplay.getSelectedValue()); //HOLY SHIT IT WORKSS
                     File fileToOpen = new File(appDir+"\\"+view.fileListDisplay.getSelectedValue());
                     System.out.println(fileToOpen);
                     if(fileToOpen != null){
@@ -124,7 +127,7 @@ public class Controller {
                         SerialReader.didIAsk = true;
                         String text = transferWindow.locationEntry.getText();
                         filename = text +"_"+ date +".csv";
-                        System.out.println("Time: "+ datetime);
+                        //System.out.println("Time: "+ time);
                         File outputFile = new File(appDir, filename);
                         System.out.println(filename);
 
@@ -261,14 +264,14 @@ public class Controller {
                     if(k == 0){
                         stat = "mean";
                     } else if (k == 1) {
-                        stat = "min";
+                        stat = "q1";
                     } else if (k == 2) {
-                        stat = "max";
+                        stat = "q3";
                     } else{
                         stat = "std";
                     }
                     headerList += (sensorType+dimension+sensorNum+":"+stat+", ");
-                    //System.out.println("lick my nuts: "+i+" "+j+" "+k);
+
                 }
             }
         }
