@@ -1,11 +1,41 @@
 #include "XGBClassifier.h"
+#include <string>
 extern float data[3][6][WINDOW_SIZE]; //WINDOW_SIZE
 extern float dataOffsets[3][6];
-extern String modDataString;
+//extern String modDataString;
 extern float modData[72];
+extern unsigned long epochSeconds;
+extern String modDataString = String(epochSeconds);
 
 Eloquent::ML::Port::XGBClassifier classifier;
+void sort(float arr[], int n) { //need to send it each column
+    int i, j;
+    float temp;
+    for (i = 0; i < n - 1; i++) {
+        for (j = i + 1; j < n; j++) {
+            if (arr[i] > arr[j]) {
+                temp = arr[i];
+                arr[i] = arr[j];
+                arr[j] = temp;
+            }
+        }
+    }
+}
 
+float computeUpperQuartile(float arr[], int len){
+  float value1 = arr[37];
+  float value2 = arr[38];
+  float q3 = (value1+value2)/2;
+  return q3;
+}
+
+
+float computeLowerQuartile(float arr[], int len){
+  float value1 = arr[12];
+  float value2 = arr[13];
+  float q1 = (value1+value2)/2;
+  return q1;
+}
 void preprocessData(){
   Serial.println("Preprocessing Data");
   //subtract offsets from data!!!!!!!
@@ -14,19 +44,11 @@ void preprocessData(){
       for(int j = 0; j < 6; j++){ //dimension (Acc XYZ, Mag XYZ)
         //reset for each sensor/dimension
         double sum = 0;
-        double maxVal = 0;
-        double minVal = 9999999999999; //what value?
+        sort(data[i][j],50); //send each column in 
+        double q3 = computeUpperQuartile(data[i][j],50);
+        double q1 = computeLowerQuartile(data[i][j],50);
         for(int k = 0; k < WINDOW_SIZE; k++){
           sum += (data[i][j][k] - dataOffsets[i][j]);
-          if(maxVal<(data[i][j][k] - dataOffsets[i][j])){
-              maxVal = (data[i][j][k] - dataOffsets[i][j]);
-          }
-          if(minVal>(data[i][j][k] - dataOffsets[i][j])){
-              minVal = (data[i][j][k] - dataOffsets[i][j]);
-          }
-          else{
-            continue;
-          }
         }
         double avg = sum/WINDOW_SIZE;
         
@@ -36,12 +58,12 @@ void preprocessData(){
         modData[modDataIndex] = avg;
         modDataIndex++;
         modDataString += (", ");
-        modDataString += String(minVal);
-        modData[modDataIndex] = minVal;
+        modDataString += String(q1);
+        modData[modDataIndex] = q1;
         modDataIndex++;
         modDataString += (", ");
-        modDataString += String(maxVal);
-        modData[modDataIndex] = maxVal;
+        modDataString += String(q3);
+        modData[modDataIndex] = q3;
         modDataIndex++;
         modDataString += (", ");
         

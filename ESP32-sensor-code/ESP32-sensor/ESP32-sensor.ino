@@ -2,7 +2,7 @@
 #define CALIBRATION_ITERATIONS 50
 #define COLLECTION_MODE false
 #define WOM_threshold 15 //Wake On Motion (milli-g)
-
+#define SECONDS_TO_SLEEP 900
 #define WINDOW_SIZE 50
 
 RTC_DATA_ATTR unsigned long epochSeconds;
@@ -18,6 +18,8 @@ char *md5str;
 #include "data.h"
 #include "driver/rtc_io.h" //This is needed for deep sleep wakeup pin configuration
 #include <cmath>
+#include "esp_timer.h"
+#include <string>
 
 RTC_DATA_ATTR ESP32Time rtc(-21600);  // offset in seconds GMT+1
 
@@ -38,7 +40,7 @@ int dataIndex = 0;
 bool DELETE_FILE  = false;
 
 
-String modDataString = "";
+//String modDataString = "";
 float modData[72]; //can change all doubles to floats
 
 typedef enum State {
@@ -73,6 +75,17 @@ RTC_DATA_ATTR short num_wakeups = 0;
 
 void setup()
 {
+  esp_sleep_wakeup_cause_t wakeup_reason;
+
+  wakeup_reason = esp_sleep_get_wakeup_cause();
+
+  if( wakeup_reason == ESP_SLEEP_WAKEUP_TIMER){
+    Serial.println("Timer Wakeup");
+    epochSeconds += SECONDS_TO_SLEEP;
+    rtc.setTime(epochSeconds);
+    Serial.println(epochSeconds);
+  }
+  esp_sleep_enable_timer_wakeup(SECONDS_TO_SLEEP * 1000000);
   
   startSetupMillis = millis();
   pinMode(SENSOR1_AD0_PIN, OUTPUT);
@@ -295,12 +308,51 @@ void handleUserInput(){
     sendHash();
     state = State::SLEEP;
   }
+  else if(matches_time_format(input)){ //if it gets a string like uddddddddddddd
+    Serial.println("Updating time");
+    int newTime = 0;
+    for(int i =1; input[i] != '\0'; i++){
+      newTime = newTime*10 +(input[i]-'0');
+    }
+    Serial.println(newTime);
+    epochSeconds = (newTime-(newTime%SECONDS_TO_SLEEP));
+    Serial.println(epochSeconds);
+  }
 }
 
 void sendHash(){
   Serial.println(md5str);
   free(md5str);
 }
+
+
+bool matches_time_format(const String& str) {
+    if (str.length() != 11) {
+        return false;
+    }
+    if (str[0] != 'u') {
+        return false;
+    }
+
+    // Check all other characters are digits
+    for (int i = 1; i < str.length(); ++i) {
+        if (!isDigit(str[i])) {
+            return false;
+        }
+    }
+    return true;
+}
+
+
+
+
+
+
+
+
+
+
+
 
 void printState(){
   switch (state){
