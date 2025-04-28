@@ -60,15 +60,19 @@ void readDataFromSD(){
         else {
           bytesToRead = FILE_HASH_BUFFSIZE;
         }
-        char* fileTransferString = (char*) malloc(FILE_HASH_BUFFSIZE);
+        char* fileTransferString = (char*) malloc(FILE_HASH_BUFFSIZE+1);
         int numBytesRead = dataFile.readBytes(fileTransferString, bytesToRead);
-        xorCipher(fileTransferString, numBytesRead, key);
+        fileTransferString[numBytesRead] = '\0';
         unsigned char* hash=MD5::make_hash(fileTransferString);
         char *md5str = MD5::make_digest(hash, 16);
+        
+        xorCipher(fileTransferString, numBytesRead+1, key);
+      
+
         Serial.print(":hash:");
         Serial.println(md5str);
         Serial.print(":data:");
-        Serial.println(fileTransferString);
+        Serial.write(fileTransferString, numBytesRead);
         Serial.println("\r\n\r\n");
       
         free(hash);
