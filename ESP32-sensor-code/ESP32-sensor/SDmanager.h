@@ -70,9 +70,10 @@ void writeRawSensorDataToSD(float rawdata[3][6][WINDOW_SIZE], int classification
 
 void readDataFromSD(){
   File dataFile = SD.open(FILENAME, FILE_READ);
+  byte key = 0xE1;
 
   if(dataFile){
-    Serial.print(":start:");
+     Serial.print(":start:");
      while(dataFile.available()){
         int bytes_available = dataFile.available();
         int bytesToRead = 0;
@@ -85,26 +86,18 @@ void readDataFromSD(){
         char* fileTransferString = (char*) malloc(FILE_HASH_BUFFSIZE+1);
         int numBytesRead = dataFile.readBytes(fileTransferString, bytesToRead);
         fileTransferString[numBytesRead] = '\0';
-//        Compute hash
         unsigned char* hash=MD5::make_hash(fileTransferString);
         char *md5str = MD5::make_digest(hash, 16);
         
-//        Compute Cipher
-        long key = 9173287;
+        xorCipher(fileTransferString, numBytesRead+1, key);
+      
 
-        for (int i = 0; i < numBytesRead; i++) {
-          int offset = (int)(sin(i+key)*12697 + 7057);
-          fileTransferString[i] = (fileTransferString[i] + offset) % 256 + 1;
-        }
-        
-
-//        Send it
         Serial.print(":hash:");
         Serial.println(md5str);
         Serial.print(":data:");
-        Serial.println(fileTransferString);
+        Serial.write(fileTransferString, numBytesRead);
         Serial.println("\r\n\r\n");
-//       Avoid mem leaks
+      
         free(hash);
         free(md5str);
         free(fileTransferString);
@@ -114,5 +107,13 @@ void readDataFromSD(){
   }
   else{
       Serial.println("Error opening file to read");  
+  }
+}
+
+//Cipher reference:
+//https://www.geeksforgeeks.org/xor-cipher/
+void xorCipher(char* data, int dataLen, byte key) {
+  for (int i = 0; i < dataLen; i++) {
+    data[i] = data[i] ^ key; 
   }
 }
