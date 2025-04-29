@@ -193,13 +193,17 @@ public class Controller {
                                             System.out.println("Could not delete file");
                                         }
                                     }
-                                    break;
+                                    transferConfirmWindow.updateConfirmationText();
+                                    eBikeDataLogger.getCardLayout().show(eBikeDataLogger.getCardPanel(), "transferConfirmWindow");
+                                    eBikeDataLogger.setTitle("BLM E-bike Data Logger - Confirm Transfer");
+                                    return;
                                 }
 
                                 startIndex = endIndex+6;
                                 System.out.println("Updating index");
                                 writer.write(decryptedData); //why are we missing the 1st data point?
                             }
+                            Model.transferSuccess = true;
                             System.out.println("File created successfully!");
                             transferConfirmWindow.updateConfirmationText();
                             eBikeDataLogger.getCardLayout().show(eBikeDataLogger.getCardPanel(), "transferConfirmWindow");

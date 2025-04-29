@@ -5,7 +5,7 @@ extern float dataOffsets[3][6];
 //extern String modDataString;
 extern float modData[72];
 extern unsigned long epochSeconds;
-extern String modDataString = String(epochSeconds);
+extern String modDataString = "";
 
 Eloquent::ML::Port::XGBClassifier classifier;
 void sort(float arr[], int n) { //need to send it each column
@@ -38,6 +38,8 @@ float computeLowerQuartile(float arr[], int len){
 }
 void preprocessData(){
   Serial.println("Preprocessing Data");
+  modDataString += String(epochSeconds);
+  modDataString += ", ";
   //subtract offsets from data!!!!!!!
   int modDataIndex = 0;
   for(int i = 0; i < 3; i++){ //sensor ID (123)

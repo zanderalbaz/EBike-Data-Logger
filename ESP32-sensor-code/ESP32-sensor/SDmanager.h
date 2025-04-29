@@ -67,6 +67,13 @@ void writeRawSensorDataToSD(float rawdata[3][6][WINDOW_SIZE], int classification
 }
 
 
+//Cipher reference:
+//https://www.geeksforgeeks.org/xor-cipher/
+void xorCipher(char* data, int dataLen, byte key){
+  for (int i = 0; i < dataLen; i++) {
+    data[i] = data[i] ^ key; 
+  }
+}
 
 void readDataFromSD(){
   File dataFile = SD.open(FILENAME, FILE_READ);
@@ -95,7 +102,7 @@ void readDataFromSD(){
         Serial.print(":hash:");
         Serial.println(md5str);
         Serial.print(":data:");
-        Serial.write(fileTransferString, numBytesRead);
+        Serial.write(fileTransferString, numBytesRead); //Java adds '\0' when converting to string, so don't send it
         Serial.println("\r\n\r\n");
       
         free(hash);
@@ -107,13 +114,5 @@ void readDataFromSD(){
   }
   else{
       Serial.println("Error opening file to read");  
-  }
-}
-
-//Cipher reference:
-//https://www.geeksforgeeks.org/xor-cipher/
-void xorCipher(char* data, int dataLen, byte key) {
-  for (int i = 0; i < dataLen; i++) {
-    data[i] = data[i] ^ key; 
   }
 }
