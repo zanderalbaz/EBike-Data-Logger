@@ -4,44 +4,45 @@
 #define WOM_threshold 15 //Wake On Motion (milli-g)
 #define SECONDS_TO_SLEEP 900
 #define WINDOW_SIZE 50
+#define TOUCH_THRESHOLD 50
 
-RTC_DATA_ATTR unsigned long epochSeconds;
-char *md5str;
 
 #include <ESP32Time.h>
 #include <MD5.h>
 #include <ICM_20948.h>
 #include <SPI.h>
 #include <SD.h>
-#include "SDmanager.h"
-#include "sensorManager.h"
-#include "data.h"
+#include <string>
 #include "driver/rtc_io.h" //This is needed for deep sleep wakeup pin configuration
 #include <cmath>
 #include "esp_timer.h"
-#include <string>
 
+///////////////////////////////////////
+//
+//               GLOBALS
+//
+///////////////////////////////////////
+
+
+RTC_DATA_ATTR unsigned long epochSeconds = 0;
 RTC_DATA_ATTR ESP32Time rtc(-21600);  // offset in seconds GMT+1
+RTC_DATA_ATTR unsigned short collectionModeClassification;
+RTC_DATA_ATTR float dataOffsets[3][6];
+RTC_DATA_ATTR short num_wakeups = 0;
 
+char *md5str;
 unsigned long startCycleMillis, stopCycleMillis;
 unsigned long startSetupMillis, stopSetupMillis;
 
 unsigned long collectionCycleStartMillis;
 unsigned long calibrationCycleStartMillis;
-
-RTC_DATA_ATTR unsigned short collectionModeClassification;
-
 float sampleHz= 16.6667;
-
-
-
 int dataIndex = 0;
-
 bool DELETE_FILE  = false;
 
-
-//String modDataString = "";
 float modData[72]; //can change all doubles to floats
+
+float data[3][6][WINDOW_SIZE]; //sensorNum, feature, instances
 
 typedef enum State {
   SENSOR1_COLLECTION,
@@ -60,10 +61,20 @@ typedef enum State {
 
 State state = State::STOPPED;
 
-float data[3][6][WINDOW_SIZE]; //WINDOW_SIZE //sensorNum, feature, instances
-RTC_DATA_ATTR float dataOffsets[3][6];
 
-RTC_DATA_ATTR short num_wakeups = 0;
+
+///////////////////////////////////////
+//
+//              IMPORTS
+//
+///////////////////////////////////////
+
+
+#include "SDmanager.h"
+#include "sensorManager.h"
+#include "data.h"
+
+
 
 
 
@@ -75,32 +86,7 @@ RTC_DATA_ATTR short num_wakeups = 0;
 
 void setup()
 {
-  esp_sleep_wakeup_cause_t wakeup_reason;
-
-  wakeup_reason = esp_sleep_get_wakeup_cause();
-
-  if( wakeup_reason == ESP_SLEEP_WAKEUP_TIMER){
-    Serial.println("Timer Wakeup");
-    epochSeconds += SECONDS_TO_SLEEP;
-    rtc.setTime(epochSeconds);
-    Serial.println(epochSeconds);
-  }
-  esp_sleep_enable_timer_wakeup(SECONDS_TO_SLEEP * 1000000);
   
-  startSetupMillis = millis();
-  pinMode(SENSOR1_AD0_PIN, OUTPUT);
-  pinMode(SENSOR2_AD0_PIN, OUTPUT);
-  pinMode(SENSOR3_AD0_PIN, OUTPUT);
-
-  //Stop holding pins (after sleep)
-  esp_sleep_enable_ext0_wakeup(WAKEUP_INT_PIN, HIGH);
-  gpio_hold_dis(WAKEUP_INT_PIN);  
-  gpio_hold_dis((gpio_num_t)SENSOR1_AD0_PIN);
-  gpio_hold_dis((gpio_num_t)SENSOR2_AD0_PIN);
-  gpio_hold_dis((gpio_num_t)SENSOR3_AD0_PIN);
-
-  gpio_deep_sleep_hold_dis();
-
   Serial.begin(115200);
   
   while(!Serial);
@@ -108,6 +94,20 @@ void setup()
   Wire.begin();
   Wire.setClock(400000);
 
+  startSetupMillis = millis();
+  pinMode(SENSOR1_AD0_PIN, OUTPUT);
+  pinMode(SENSOR2_AD0_PIN, OUTPUT);
+  pinMode(SENSOR3_AD0_PIN, OUTPUT);
+
+  //Stop holding pins (after sleep)
+  esp_sleep_enable_ext0_wakeup(WAKEUP_INT_PIN, HIGH);
+  esp_sleep_enable_timer_wakeup(SECONDS_TO_SLEEP * 1000000);
+  gpio_hold_dis(WAKEUP_INT_PIN);  
+  gpio_hold_dis((gpio_num_t)SENSOR1_AD0_PIN);
+  gpio_hold_dis((gpio_num_t)SENSOR2_AD0_PIN);
+  gpio_hold_dis((gpio_num_t)SENSOR3_AD0_PIN);
+
+  gpio_deep_sleep_hold_dis();
 
   initializeSensors();
   initializeSD();
@@ -116,21 +116,36 @@ void setup()
     if(DELETE_FILE){
       removeSDFile();
     }
+    rtc.setTime(epochSeconds);
     calibrateSensors(CALIBRATION_ITERATIONS);
     state = State::SLEEP;
     collectionModeClassification=0;
-    rtc.setTime(1744386280);
+  }
+  esp_sleep_wakeup_cause_t wakeup_reason;
+
+  wakeup_reason = esp_sleep_get_wakeup_cause();
+  
+//  if( wakeup_reason == ESP_SLEEP_WAKEUP_TOUCHPAD){
+//    state = State::IDLE;
+//  }
+  
+//  touchSleepWakeUpEnable(T7, TOUCH_THRESHOLD); //D27
+
+  if(wakeup_reason == ESP_SLEEP_WAKEUP_TIMER){
+    esp_sleep_enable_timer_wakeup(SECONDS_TO_SLEEP * 1000000);
+    Serial.println("Timer Wakeup");
+    epochSeconds += SECONDS_TO_SLEEP;
+    rtc.setTime(epochSeconds);
+    Serial.println(epochSeconds);
+    calibrateSensors(CALIBRATION_ITERATIONS);
+    state = State::SLEEP;
   }
   
   stopSetupMillis = millis();
-//  Serial.print("Setup Time (ms): ");
-//  Serial.println(stopSetupMillis - startSetupMillis);
+  Serial.print("Setup Time (ms): ");
+  Serial.println(stopSetupMillis - startSetupMillis);
   num_wakeups++;
-  //change this code to be on Java application startup
-  
-//  Serial.println("Please input current time in epoch seconds");
-//  epochSeconds = Serial.parseInt();
-//  Serial.println(epochSeconds);
+
 }
 
 ///////////////////////////////////////
@@ -216,20 +231,20 @@ void loop()
       state = State::SLEEP;
       break;
     case State::SLEEP:
-//      Serial.println("Entering Deep Sleep");
-//      switchSensorTo(State::SENSOR1_COLLECTION);
-//      delay(50);
-//      currentICM.sleep(true);
-//      currentICM.lowPower(true);
-//      switchSensorTo(State::SENSOR3_COLLECTION);
-//      delay(50);
-//      currentICM.sleep(true);
-//      currentICM.lowPower(true);
+      Serial.println("Entering Deep Sleep");
+      switchSensorTo(State::SENSOR1_COLLECTION);
+      delay(50);
+      currentICM.sleep(true);
+      currentICM.lowPower(true);
+      switchSensorTo(State::SENSOR3_COLLECTION);
+      delay(50);
+      currentICM.sleep(true);
+      currentICM.lowPower(true);
       switchSensorTo(State::SENSOR2_COLLECTION);
-//      delay(50);
-//      currentICM.sleep(false);
-//      currentICM.lowPower(false);
-      //Hold AD0 pins high during sleep ref
+      delay(50);
+      currentICM.sleep(false);
+      currentICM.lowPower(false);
+//      Hold AD0 pins high during sleep ref
       //https://electronics.stackexchange.com/questions/350158/esp32-how-to-keep-a-pin-high-during-deep-sleep-rtc-gpio-pull-ups-are-too-weak
 //      digitalWrite(2, LOW);
 //      digitalWrite(4, LOW);  
@@ -261,7 +276,7 @@ void loop()
       Serial.println(currentICM.statusString());
       
       //END EXAMPLE SKETCH CODE
-      
+      epochSeconds = rtc.getEpoch();
       esp_deep_sleep_start();
       break;
   };
@@ -272,6 +287,7 @@ void handleUserInput(){
   String input = Serial.readString();
   if (input == "c"){
     calibrateSensors(CALIBRATION_ITERATIONS);
+
   }
   else if(input == "r"){
     initializeSensors();
@@ -315,7 +331,8 @@ void handleUserInput(){
       newTime = newTime*10 +(input[i]-'0');
     }
     Serial.println(newTime);
-    epochSeconds = (newTime-(newTime%SECONDS_TO_SLEEP));
+    epochSeconds = (newTime);
+    rtc.setTime(epochSeconds);
     Serial.println(epochSeconds);
   }
 }
