@@ -29,8 +29,6 @@ void removeSDFile(){
 void writeSensorDataToSD(){
   File dataFile = SD.open(FILENAME, FILE_APPEND);
   if(dataFile){
-//    dataFile.print(epochSeconds);
-//    dataFile.print(", ");
     dataFile.print(modDataString);
     dataFile.close();
   }

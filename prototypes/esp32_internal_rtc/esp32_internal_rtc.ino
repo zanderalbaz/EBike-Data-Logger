@@ -22,10 +22,13 @@
   SOFTWARE.
 */
 #include "esp_timer.h"
+#include "esp32/rtc.h"  // This is needed to track time during deep sleep
 #include <ESP32Time.h>
 int SECONDS_TO_SLEEP = 60;
 RTC_DATA_ATTR unsigned long epochSeconds = 0;
+RTC_DATA_ATTR unsigned long sleepClockCycle = 0;
 RTC_DATA_ATTR int bootNum = 0;
+RTC_DATA_ATTR unsigned long long start_time = 0;
 
 //ESP32Time rtc;
 RTC_DATA_ATTR ESP32Time rtc(-21600);  // offset in seconds GMT+1
@@ -44,17 +47,22 @@ void setup() {
     rtc.setTime(epochSeconds);
   }
   if( wakeup_reason == ESP_SLEEP_WAKEUP_TIMER){
-    Serial.println("Timer Wakeup");
-    epochSeconds += SECONDS_TO_SLEEP;
-    rtc.setTime(epochSeconds);
-    Serial.println(epochSeconds);
+//    Serial.println("Timer Wakeup");
+//    epochSeconds += SECONDS_TO_SLEEP;
+//    rtc.setTime(epochSeconds);
+//    Serial.println(epochSeconds);
+    unsigned long long end_time = esp_rtc_get_time_us();
+    double elapsed = (end_time - start_time) / 1000000.0;
+
+    Serial.print("Start time (us): "); Serial.println(start_time);
+    Serial.print("End time (us): "); Serial.println(end_time);
+    Serial.print("Elapsed time (s): "); Serial.println(elapsed);
   }
   
-  esp_sleep_enable_timer_wakeup(SECONDS_TO_SLEEP * 1000000);
+  esp_sleep_enable_timer_wakeup(5.5 * 1000000); 
+  start_time = esp_rtc_get_time_us();
   bootNum++;
-//  epochSeconds = rtc.getEpoch();
   esp_deep_sleep_start();
-
 }
 
 void loop() {
