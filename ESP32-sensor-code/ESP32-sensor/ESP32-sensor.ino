@@ -140,6 +140,11 @@ void setup()
     calibrateSensors(CALIBRATION_ITERATIONS);
     state = State::SLEEP;
   }
+
+  if(wakeup_reason == ESP_SLEEP_WAKEUP_TIMER){
+  
+  }
+
   
   stopSetupMillis = millis();
   Serial.print("Setup Time (ms): ");
@@ -214,7 +219,7 @@ void loop()
       }
       else{
         struct tm timeinfo = rtc.getTimeStruct();
-        rtc.getEpoch();
+        epochSeconds = rtc.getEpoch();
         writeSensorDataToSD();
       }
       state = State::SLEEP;
@@ -228,7 +233,7 @@ void loop()
       break;
     case State::SD_READ:
       readDataFromSD(); 
-      state = State::SLEEP;
+//      state = State::SLEEP;
       break;
     case State::SLEEP:
       Serial.println("Entering Deep Sleep");
@@ -246,8 +251,7 @@ void loop()
       currentICM.lowPower(false);
 //      Hold AD0 pins high during sleep ref
       //https://electronics.stackexchange.com/questions/350158/esp32-how-to-keep-a-pin-high-during-deep-sleep-rtc-gpio-pull-ups-are-too-weak
-//      digitalWrite(2, LOW);
-//      digitalWrite(4, LOW);  
+      
       //Lock AD0 pins 
       gpio_hold_en((gpio_num_t)SENSOR1_AD0_PIN);  
       gpio_hold_en((gpio_num_t)SENSOR2_AD0_PIN);  
@@ -287,7 +291,7 @@ void handleUserInput(){
   String input = Serial.readString();
   if (input == "c"){
     calibrateSensors(CALIBRATION_ITERATIONS);
-
+    state = State::SLEEP;
   }
   else if(input == "r"){
     initializeSensors();
@@ -320,26 +324,17 @@ void handleUserInput(){
     removeSDFile();
     state = State::SLEEP;
   }
-  else if(input =="h"){
-    sendHash();
-    state = State::SLEEP;
-  }
   else if(matches_time_format(input)){ //if it gets a string like uddddddddddddd
     Serial.println("Updating time");
-    int newTime = 0;
+    unsigned long newTime = 0;
     for(int i =1; input[i] != '\0'; i++){
       newTime = newTime*10 +(input[i]-'0');
     }
     Serial.println(newTime);
     epochSeconds = (newTime);
     rtc.setTime(epochSeconds);
-    Serial.println(epochSeconds);
+    Serial.println(rtc.getEpoch());
   }
-}
-
-void sendHash(){
-  Serial.println(md5str);
-  free(md5str);
 }
 
 
@@ -359,15 +354,6 @@ bool matches_time_format(const String& str) {
     }
     return true;
 }
-
-
-
-
-
-
-
-
-
 
 
 
@@ -425,7 +411,6 @@ void collectSensorData(int index) {
   int attempts = 0;
   while (!currentICM.dataReady()) {
     if (currentICM.statusString() == "Data Underflow") {
-//      Serial.println("Data Underflow");
       attempts++;
       if(attempts >= 5){
         return;
@@ -435,7 +420,7 @@ void collectSensorData(int index) {
     else{
       Serial.println(currentICM.statusString());
     }
-  };
+  }
   currentICM.getAGMT();
   switch(state){
     case State::SENSOR1_COLLECTION:

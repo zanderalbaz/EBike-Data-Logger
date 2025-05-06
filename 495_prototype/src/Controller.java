@@ -14,7 +14,7 @@ public class Controller {
     private Model model; // don't need this??
     private Home home;
     private TransferWindow transferWindow;
-    private ViewWindow view; //class DNE (yet)
+    private ViewWindow view;
     private TransferConfirmWindow transferConfirmWindow;
     private EBikeDataLogger eBikeDataLogger;
     private SerialIO serialIO;
@@ -83,6 +83,7 @@ public class Controller {
         this.home.viewButton(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
+                view.showContents();
                 eBikeDataLogger.getCardLayout().show(eBikeDataLogger.getCardPanel(), "viewWindow");
                 eBikeDataLogger.setTitle("BLM E-bike Data Logger - View Data");
             }
@@ -114,6 +115,13 @@ public class Controller {
                 eBikeDataLogger.setTitle("BLM E-bike Data Logger - Home");
             }
         });
+        this.transferConfirmWindow.confirmationToHome(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                eBikeDataLogger.getCardLayout().show(eBikeDataLogger.getCardPanel(), "home");
+                eBikeDataLogger.setTitle("BLM E-bike Data Logger - Home");
+            }
+        });
 
 
         //TRANSFER DATA BUTTON -> will dump SD data to a CSV
@@ -132,14 +140,23 @@ public class Controller {
                         System.out.println(filename);
 
                         try(FileWriter writer = new FileWriter(outputFile)){
-                            writer.write(writeHeader()); //append
+                            writer.write(writeHeader()); //append header to new file
                             System.out.println("File created successfully!");
+
                             //Insert Serial Parser Here.
                             //Wait until data starts
                             System.out.println("Waiting for data to transfer");
+                            long startTimeMillis = System.currentTimeMillis();
                             while(!SerialReader.serialBuffer.contains(":start:")){
                                 System.out.println(SerialReader.serialBuffer.length());
                                 Thread.sleep(100);
+                                if((System.currentTimeMillis() - startTimeMillis)/1000 > 10){ //If not started within 10 seconds
+                                    Model.transferSuccess = false;
+                                    transferConfirmWindow.updateConfirmationText();
+                                    eBikeDataLogger.getCardLayout().show(eBikeDataLogger.getCardPanel(), "transferConfirmWindow");
+                                    eBikeDataLogger.setTitle("BLM E-bike Data Logger - Confirm Transfer");
+                                    return;
+                                }
                             }
                             int startIndex = SerialReader.serialBuffer.indexOf(":start:");
                             //Wait until chunk is sent
@@ -175,10 +192,9 @@ public class Controller {
                                 System.out.println("DECRYPTED:" + decryptedData);
 
                                 //CREATE HASH
-                                String hashFromJava = hash.createMD5Hash(decryptedData); //5eb63bbbe01eeed093cb22bb8f5acdc3 -> hello world
+                                String hashFromJava = hash.createMD5Hash(decryptedData);
                                 if (hashFromSerial.equals(hashFromJava)) {
                                     System.out.println("Hashes matched -> data transfer success!");
-                                    System.out.println(Model.transferSuccess);
                                 } else {
                                     System.out.println("hashes do not match -> that is not good");
                                     System.out.println(" ESP:" + hashFromSerial);
@@ -204,7 +220,7 @@ public class Controller {
                                 writer.write(decryptedData); //why are we missing the 1st data point?
                             }
                             Model.transferSuccess = true;
-                            System.out.println("File created successfully!");
+                            System.out.println("File saved successfully!");
                             transferConfirmWindow.updateConfirmationText();
                             eBikeDataLogger.getCardLayout().show(eBikeDataLogger.getCardPanel(), "transferConfirmWindow");
                             eBikeDataLogger.setTitle("BLM E-bike Data Logger - Confirm Transfer");

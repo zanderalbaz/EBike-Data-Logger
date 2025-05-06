@@ -9,10 +9,9 @@ extern String modDataString = "";
 
 Eloquent::ML::Port::XGBClassifier classifier;
 void sort(float arr[], int n) { //need to send it each column
-    int i, j;
     float temp;
-    for (i = 0; i < n - 1; i++) {
-        for (j = i + 1; j < n; j++) {
+    for (int i = 0; i < n - 1; i++) {
+        for (int j = i + 1; j < n; j++) {
             if (arr[i] > arr[j]) {
                 temp = arr[i];
                 arr[i] = arr[j];
@@ -22,17 +21,17 @@ void sort(float arr[], int n) { //need to send it each column
     }
 }
 
-float computeUpperQuartile(float arr[], int len){
-  float value1 = arr[37];
-  float value2 = arr[38];
+float computeUpperQuartile(float offset, float arr[], int len){
+  float value1 = arr[37] - offset;
+  float value2 = arr[38] - offset;
   float q3 = (value1+value2)/2;
   return q3;
 }
 
 
-float computeLowerQuartile(float arr[], int len){
-  float value1 = arr[12];
-  float value2 = arr[13];
+float computeLowerQuartile(float offset, float arr[], int len){
+  float value1 = arr[12] - offset;
+  float value2 = arr[13] - offset;
   float q1 = (value1+value2)/2;
   return q1;
 }
@@ -46,15 +45,16 @@ void preprocessData(){
       for(int j = 0; j < 6; j++){ //dimension (Acc XYZ, Mag XYZ)
         //reset for each sensor/dimension
         double sum = 0;
-        sort(data[i][j],50); //send each column in 
-        double q3 = computeUpperQuartile(data[i][j],50);
-        double q1 = computeLowerQuartile(data[i][j],50);
+        sort(data[i][j],50); //send each column in
+        double offset = dataOffsets[i][j]; 
+        double q3 = computeUpperQuartile(offset, data[i][j], 50);
+        double q1 = computeLowerQuartile(offset, data[i][j], 50);
         for(int k = 0; k < WINDOW_SIZE; k++){
           sum += (data[i][j][k] - dataOffsets[i][j]);
         }
         double avg = sum/WINDOW_SIZE;
         
-        //format is: mean, min, max, std
+        //format is: mean, q1, q3, std
         
         modDataString += String(avg);
         modData[modDataIndex] = avg;

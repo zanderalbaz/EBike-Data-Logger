@@ -8,6 +8,7 @@ public class TransferConfirmWindow extends JPanel{
     private JLabel label = new JLabel("Transfer Status");
     private JLabel subMessage;
     private JButton viewData = new JButton("View Data");
+    private JButton button_home;
 
     public TransferConfirmWindow(){
         try {
@@ -18,6 +19,10 @@ public class TransferConfirmWindow extends JPanel{
         setLayout(null);
         label.setBounds(300, 0, 200, 70);
         add(label);
+        button_home = new JButton("<-");
+        button_home.setBounds(10, 10, 50, 20);
+        add(button_home);
+
         System.out.println("TRANSFER SUCCESS STATUS: " + Model.transferSuccess);
         confirmTransfer = new JLabel("PENDING");
         subMessage = new JLabel("pending transfer");
@@ -42,4 +47,8 @@ public class TransferConfirmWindow extends JPanel{
             subMessage.setText("Please try again");
         }
     }
+    public void confirmationToHome(ActionListener listener) {
+        button_home.addActionListener(listener);
+    } //back button
+
 }
