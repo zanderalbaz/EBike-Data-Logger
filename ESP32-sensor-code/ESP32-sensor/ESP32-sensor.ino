@@ -13,8 +13,9 @@
 #include <SPI.h>
 #include <SD.h>
 #include <string>
-#include "driver/rtc_io.h" //This is needed for deep sleep wakeup pin configuration
 #include <cmath>
+#include "esp32/rtc.h"  // This is needed to track time during deep sleep
+#include "driver/rtc_io.h" //This is needed for deep sleep wakeup pin configuration
 #include "esp_timer.h"
 
 ///////////////////////////////////////
@@ -25,10 +26,12 @@
 
 
 RTC_DATA_ATTR unsigned long epochSeconds = 0;
-RTC_DATA_ATTR ESP32Time rtc(-21600);  // offset in seconds GMT+1
+RTC_DATA_ATTR ESP32Time rtc(-21600);  // offset in seconds GMT+1 (offset is set to MST)
 RTC_DATA_ATTR unsigned short collectionModeClassification;
 RTC_DATA_ATTR float dataOffsets[3][6];
 RTC_DATA_ATTR short num_wakeups = 0;
+RTC_DATA_ATTR unsigned long long sleepStartTime = 0;
+
 
 char *md5str;
 unsigned long startCycleMillis, stopCycleMillis;
@@ -124,12 +127,6 @@ void setup()
   esp_sleep_wakeup_cause_t wakeup_reason;
 
   wakeup_reason = esp_sleep_get_wakeup_cause();
-  
-//  if( wakeup_reason == ESP_SLEEP_WAKEUP_TOUCHPAD){
-//    state = State::IDLE;
-//  }
-  
-//  touchSleepWakeUpEnable(T7, TOUCH_THRESHOLD); //D27
 
   if(wakeup_reason == ESP_SLEEP_WAKEUP_TIMER){
     esp_sleep_enable_timer_wakeup(SECONDS_TO_SLEEP * 1000000);
@@ -141,8 +138,14 @@ void setup()
     state = State::SLEEP;
   }
 
-  if(wakeup_reason == ESP_SLEEP_WAKEUP_TIMER){
-  
+  if(wakeup_reason == ESP_SLEEP_WAKEUP_EXT0){
+    unsigned long long sleepEndTime = esp_rtc_get_time_us();
+    double sleepElapsedTime = (sleepEndTime - sleepStartTime) / 1000000.0;
+    epochSeconds += (int)sleepElapsedTime;
+    rtc.setTime(epochSeconds);
+    Serial.print("Sleep time (s): "); 
+    Serial.println(sleepElapsedTime);
+    Serial.println(rtc.getEpoch());
   }
 
   
@@ -233,7 +236,7 @@ void loop()
       break;
     case State::SD_READ:
       readDataFromSD(); 
-//      state = State::SLEEP;
+      state = State::IDLE;
       break;
     case State::SLEEP:
       Serial.println("Entering Deep Sleep");
@@ -281,6 +284,7 @@ void loop()
       
       //END EXAMPLE SKETCH CODE
       epochSeconds = rtc.getEpoch();
+      sleepStartTime = esp_rtc_get_time_us();
       esp_deep_sleep_start();
       break;
   };
@@ -300,7 +304,7 @@ void handleUserInput(){
     state = State::IDLE;
   }
   else if(input == "t"){
-    state = State::SD_READ;  
+    state = State::SD_READ;
   }
   else if(input == "s"){
     state = State::SLEEP;
@@ -334,6 +338,7 @@ void handleUserInput(){
     epochSeconds = (newTime);
     rtc.setTime(epochSeconds);
     Serial.println(rtc.getEpoch());
+    state = State::IDLE;
   }
 }
 

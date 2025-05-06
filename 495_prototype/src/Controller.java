@@ -34,7 +34,6 @@ public class Controller {
         this.hash = new HashGenerator();
         LocalTime time = LocalTime.now();
         LocalDate date = LocalDate.now();
-        long epoch = java.time.Instant.now().getEpochSecond();
 
         String userHome = System.getProperty("user.home");
         String appFolderName = ".EBikeData";
@@ -62,8 +61,6 @@ public class Controller {
                     serialIO.getSerialWriter().setMessageToWrite("CONNECTED TO SENSOR" + '\n');
                     Model.connectionValid = true;
                     System.out.println("CONNECTED TO SENSOR");
-                    serialIO.getSerialWriter().setMessageToWrite("u"+epoch);
-                    System.out.println("u"+epoch);
                 }catch(Exception f){
                     Model.connectionValid = false;
                     System.out.println("CONNECTION FAILED");
@@ -130,12 +127,23 @@ public class Controller {
             public void actionPerformed(ActionEvent e) {
                 if(!transferWindow.locationEntry.getText().isEmpty()){ //if NOT empty, allow button press
                     SerialReader.serialBuffer = "";
+                    long epoch = java.time.Instant.now().getEpochSecond();
+                    serialIO.getSerialWriter().setMessageToWrite("u"+epoch);
+                    System.out.println("u"+epoch);
+                    while(serialIO.getSerialWriter().getMessageToWrite() != null);
+                    System.out.println("Time sync sent");
+                    try {
+                        Thread.sleep(10000); //wait for calibration
+                    } catch (InterruptedException ex) {
+                        throw new RuntimeException(ex);
+                    }
+                    System.out.println(SerialReader.serialBuffer);
                     serialIO.getSerialWriter().setMessageToWrite("t");
+                    while(serialIO.getSerialWriter().getMessageToWrite() != null);
                     if (e.getSource() == transferWindow.transferdatabutton){
                         SerialReader.didIAsk = true;
                         String text = transferWindow.locationEntry.getText();
                         filename = text +"_"+ date +".csv";
-                        //System.out.println("Time: "+ time);
                         File outputFile = new File(appDir, filename);
                         System.out.println(filename);
 
@@ -152,9 +160,19 @@ public class Controller {
                                 Thread.sleep(100);
                                 if((System.currentTimeMillis() - startTimeMillis)/1000 > 10){ //If not started within 10 seconds
                                     Model.transferSuccess = false;
+                                    serialIO.getSerialWriter().setMessageToWrite("s");
                                     transferConfirmWindow.updateConfirmationText();
                                     eBikeDataLogger.getCardLayout().show(eBikeDataLogger.getCardPanel(), "transferConfirmWindow");
                                     eBikeDataLogger.setTitle("BLM E-bike Data Logger - Confirm Transfer");
+                                    if (outputFile.exists()) {
+                                        boolean deleted = outputFile.delete();
+                                        if(deleted){
+                                            System.out.println("File Deleted");
+                                        }
+                                        else{
+                                            System.out.println("Could not delete file");
+                                        }
+                                    }
                                     return;
                                 }
                             }
@@ -200,6 +218,7 @@ public class Controller {
                                     System.out.println(" ESP:" + hashFromSerial);
                                     System.out.println("JAVA:" + hashFromJava);
                                     Model.transferSuccess = false;
+                                    serialIO.getSerialWriter().setMessageToWrite("s");
                                     if (outputFile.exists()) {
                                         boolean deleted = outputFile.delete();
                                         if(deleted){
@@ -224,6 +243,8 @@ public class Controller {
                             transferConfirmWindow.updateConfirmationText();
                             eBikeDataLogger.getCardLayout().show(eBikeDataLogger.getCardPanel(), "transferConfirmWindow");
                             eBikeDataLogger.setTitle("BLM E-bike Data Logger - Confirm Transfer");
+                            serialIO.getSerialWriter().setMessageToWrite("d"); //delete data on SD
+
                         }catch(IOException q){
                             System.out.println("ERROR writing to csv");
                         } catch (Exception ex) {
